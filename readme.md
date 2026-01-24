@@ -733,14 +733,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - **🎭 Framer Motion** - For smooth animations
 
 ---
-
-## 📞 Support
-
-- **📧 Email**: support@vendorify.com
-- **💬 Discord**: [Join our community](#)
-- **🐦 Twitter**: [@vendorify](#)
-- **📖 Documentation**: [docs.vendorify.com](#)
-
 ---
 
 <div align="center">
