@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Vendorify Logo](https://via.placeholder.com/200x80/1A6950/FFFFFF?text=VENDORIFY)
+![Vendorify Logo](image-11.png)
 
 **गली गली के ठेले वाले आपको यहाँ मिलेंगे**  
 *Desi Products, World-Class Quality, Street Prices*
@@ -74,25 +74,16 @@
 ## 🎯 Demo & Screenshots
 
 ### 🏠 Landing Page
-![Landing Page](https://via.placeholder.com/800x500/FDF9DC/1A6950?text=Landing+Page+Screenshot)
+!![Landing Page](image-12.png)
 *Modern landing page with bilingual support and clear call-to-actions*
 
 ### 🛍️ Customer Dashboard
-![Customer Dashboard](https://via.placeholder.com/800x500/FFFFFF/1A6950?text=Customer+Dashboard+Screenshot)
+![Customer Dashboard](image-13.png)
 *Interactive map view with nearby vendors and real-time locations*
 
 ### 🏪 Vendor Dashboard
-![Vendor Dashboard](https://via.placeholder.com/800x500/1A6950/FFFFFF?text=Vendor+Dashboard+Screenshot)
+![Vendor Dashboard](image-14.png)
 *Comprehensive vendor management with analytics and order tracking*
-
-### 📱 Mobile Experience
-<div align="center">
-<img src="https://via.placeholder.com/300x600/FDF9DC/1A6950?text=Mobile+View+1" width="200" alt="Mobile View 1">
-<img src="https://via.placeholder.com/300x600/FFFFFF/1A6950?text=Mobile+View+2" width="200" alt="Mobile View 2">
-<img src="https://via.placeholder.com/300x600/1A6950/FFFFFF?text=Mobile+View+3" width="200" alt="Mobile View 3">
-</div>
-
-*Fully responsive design optimized for mobile devices*
 
 ---
 
