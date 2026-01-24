@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../context/AppDataContext';
 import {
@@ -22,29 +22,75 @@ import { Footer } from '../../components/common/Footer';
 
 const VendorProfile = () => {
   const navigate = useNavigate();
-  const { getVendorById, getOrdersForVendor } = useAppData();
+  const { getOrdersForVendor, vendorDetails, fetchVendorData } = useAppData();
   const [activeTab, setActiveTab] = useState('overview');
+  const [loading, setLoading] = useState(true);
 
-  const vendorId = 1;
-  const vendor = getVendorById(vendorId);
-  const orders = getOrdersForVendor(vendorId);
+  // Get vendor data from context (should be fetched when vendor logs in)
+  const vendor = vendorDetails;
+  const orders = getOrdersForVendor(vendor?._id);
   const completedOrders = orders.filter(o => o.status === 'COMPLETED');
   const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
 
-  const vendorDetails = {
+  // Fetch vendor data on component mount
+  useEffect(() => {
+    const loadVendorData = async () => {
+      setLoading(true);
+      try {
+        await fetchVendorData();
+      } catch (error) {
+        console.error('Error loading vendor data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadVendorData();
+  }, [fetchVendorData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDF9DC] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-8 animate-pulse">
+          <Store className="text-gray-300" size={40} />
+        </div>
+        <p className="font-black uppercase tracking-widest text-gray-400">Loading profile...</p>
+      </div>
+    );
+  }
+
+  if (!vendor) {
+    return (
+      <div className="min-h-screen bg-[#FDF9DC] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-8">
+          <Store className="text-gray-300" size={40} />
+        </div>
+        <h3 className="text-2xl font-heading font-black text-gray-900 uppercase">Profile not found</h3>
+        <p className="text-gray-400 mb-6">Please complete your vendor registration first.</p>
+        <button 
+          onClick={() => navigate('/vendor/dashboard')}
+          className="bg-[#1A6950] text-white px-8 py-4 rounded-[24px] font-black uppercase tracking-widest text-xs"
+        >
+          Go to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  const vendorProfileData = {
     ...vendor,
-    email: 'raju@vendorify.com',
-    phone: '+91 98765 43210',
-    description: 'Serving authentic street food since 2015. Specializing in Pani Puri, Chaat, and traditional Indian snacks.',
-    businessHours: '10:00 AM - 10:00 PM',
-    established: '2015',
-    certifications: ['FSSAI Certified', 'Hygiene Verified'],
+    email: vendor?.email || vendor?.contactEmail || 'vendor@vendorify.com',
+    phone: vendor?.phone || vendor?.contactPhone || '+91 98765 43210',
+    description: vendor?.description || 'Serving authentic street food since 2015. Specializing in Pani Puri, Chaat, and traditional Indian snacks.',
+    businessHours: vendor?.schedule?.operatingHours || '10:00 AM - 10:00 PM',
+    established: vendor?.establishedYear || '2015',
+    certifications: vendor?.certifications || ['FSSAI Certified', 'Hygiene Verified'],
   };
 
   const stats = [
     { icon: DollarSign, label: 'Earnings', value: `₹${totalEarnings}`, color: 'bg-[#CDF546] text-gray-900' },
     { icon: Package, label: 'Orders', value: orders.length, color: 'bg-[#1A6950] text-white' },
-    { icon: Star, label: 'Rating', value: vendorDetails.rating, color: 'bg-white text-[#1A6950]' },
+    { icon: Star, label: 'Rating', value: vendorProfileData.rating, color: 'bg-white text-[#1A6950]' },
   ];
 
   return (
@@ -64,8 +110,8 @@ const VendorProfile = () => {
                 </button>
               </div>
 
-              <h1 className="text-3xl font-heading font-black text-gray-900 uppercase tracking-tight mb-2">{vendorDetails.name}</h1>
-              <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mb-8">Verified Vendor Since {vendorDetails.established}</p>
+              <h1 className="text-3xl font-heading font-black text-gray-900 uppercase tracking-tight mb-2">{vendorProfileData.shopName || vendorProfileData.name}</h1>
+              <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mb-8">Verified Vendor Since {vendorProfileData.established}</p>
 
               <div className="flex items-center justify-center gap-3 bg-[#CDF546]/20 py-3 px-6 rounded-2xl text-[#1A6950] font-black text-[10px] uppercase tracking-widest border border-[#CDF546]/30 mb-8">
                 <ShieldCheck size={16} />
@@ -122,7 +168,7 @@ const VendorProfile = () => {
                       <h3 className="text-2xl font-heading font-black text-gray-900 uppercase tracking-tight">Public Profile</h3>
                       <div className="p-8 bg-gray-50 rounded-[40px] border border-transparent hover:border-gray-100 transition-all">
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Description</p>
-                        <p className="font-medium text-gray-600 leading-relaxed">{vendorDetails.description}</p>
+                        <p className="font-medium text-gray-600 leading-relaxed">{vendorProfileData.description}</p>
                       </div>
                     </div>
 
@@ -131,11 +177,11 @@ const VendorProfile = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-6 bg-gray-50 rounded-[32px] space-y-1">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Business Email</p>
-                          <p className="font-black text-gray-900">{vendorDetails.email}</p>
+                          <p className="font-black text-gray-900">{vendorProfileData.email}</p>
                         </div>
                         <div className="p-6 bg-gray-50 rounded-[32px] space-y-1">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Support Line</p>
-                          <p className="font-black text-gray-900">{vendorDetails.phone}</p>
+                          <p className="font-black text-gray-900">{vendorProfileData.phone}</p>
                         </div>
                       </div>
                     </div>
@@ -153,7 +199,7 @@ const VendorProfile = () => {
                           </div>
                           <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-[#1A6950]/60">Operational Hours</p>
-                            <span className="text-xl font-black text-gray-900 uppercase tracking-tight">{vendorDetails.businessHours}</span>
+                            <span className="text-xl font-black text-gray-900 uppercase tracking-tight">{vendorProfileData.businessHours}</span>
                           </div>
                         </div>
                         <ChevronRight size={24} className="text-gray-400 group-hover:text-gray-900" />
@@ -169,7 +215,7 @@ const VendorProfile = () => {
                           </div>
                           <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Primary Address</p>
-                            <span className="text-xl font-black uppercase tracking-tight">{vendorDetails.address}</span>
+                            <span className="text-xl font-black uppercase tracking-tight">{vendorProfileData.address}</span>
                           </div>
                         </div>
                         <Edit size={24} className="text-white/20 group-hover:text-white" />
@@ -182,7 +228,7 @@ const VendorProfile = () => {
                   <div className="space-y-4">
                     <h3 className="text-2xl font-heading font-black text-gray-900 uppercase tracking-tight">Compliance & Trust</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {vendorDetails.certifications.map((cert, idx) => (
+                      {vendorProfileData.certifications.map((cert, idx) => (
                         <div key={idx} className="p-8 bg-white border border-gray-100 rounded-[40px] flex items-center gap-6 group hover:shadow-xl transition-all">
                           <div className="w-12 h-12 bg-green-50 text-green-500 rounded-2xl flex items-center justify-center">
                             <Award size={24} />

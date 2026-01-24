@@ -54,6 +54,15 @@ exports.updateVendorProfile = async (req, res) => {
         // Extract location data if provided
         const updateData = { ...req.body };
         
+        // Log the update data for debugging
+        Logger.info('Updating vendor profile:', {
+            userId: req.user.id,
+            updateData: {
+                ...updateData,
+                image: updateData.image ? 'Image included' : 'No image'
+            }
+        });
+        
         // Handle coordinates if provided
         if (req.body.coordinates && Array.isArray(req.body.coordinates) && req.body.coordinates.length === 2) {
             updateData.location = {
@@ -173,20 +182,74 @@ exports.updateLiveLocation = async (req, res) => {
             });
         }
 
-        // Reverse geocoding to get address (using a free service)
+        // Enhanced reverse geocoding to get readable address
         let address = `${latitude}, ${longitude}`;
+        let locationDetails = null;
         
         try {
-            const response = await fetch(
-                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+            // Try multiple geocoding services for better results
+            let response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
             );
             
             if (response.ok) {
                 const data = await response.json();
-                address = data.display_name || data.locality || address;
+                if (data && data.address) {
+                    const addr = data.address;
+                    const parts = [];
+                    
+                    // Build readable address from components
+                    if (addr.house_number && addr.road) {
+                        parts.push(`${addr.house_number} ${addr.road}`);
+                    } else if (addr.road) {
+                        parts.push(addr.road);
+                    }
+                    
+                    if (addr.neighbourhood || addr.suburb) {
+                        parts.push(addr.neighbourhood || addr.suburb);
+                    }
+                    
+                    if (addr.city || addr.town || addr.village) {
+                        parts.push(addr.city || addr.town || addr.village);
+                    }
+                    
+                    if (addr.state) {
+                        parts.push(addr.state);
+                    }
+                    
+                    if (parts.length > 0) {
+                        address = parts.join(', ');
+                    }
+                    
+                    locationDetails = {
+                        place: addr.neighbourhood || addr.suburb || addr.road || 'Unknown Area',
+                        district: addr.city || addr.town || addr.village || 'Unknown District',
+                        state: addr.state || 'Unknown State',
+                        country: addr.country || 'India',
+                        fullAddress: address
+                    };
+                }
+            } else {
+                // Fallback to BigDataCloud if Nominatim fails
+                response = await fetch(
+                    `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+                );
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    address = data.display_name || data.locality || address;
+                    
+                    locationDetails = {
+                        place: data.locality || 'Unknown Area',
+                        district: data.city || 'Unknown District', 
+                        state: data.principalSubdivision || 'Unknown State',
+                        country: data.countryName || 'India',
+                        fullAddress: address
+                    };
+                }
             }
         } catch (geocodeError) {
-            Logger.info('Reverse geocoding failed, using coordinates as address');
+            Logger.info('Reverse geocoding failed, using coordinates as address:', geocodeError.message);
         }
 
         const updateData = {
@@ -228,7 +291,8 @@ exports.updateLiveLocation = async (req, res) => {
             vendor: {
                 address: vendor.address,
                 location: vendor.location,
-                lastLocationUpdate: vendor.lastLocationUpdate
+                lastLocationUpdate: vendor.lastLocationUpdate,
+                locationDetails: locationDetails // Include detailed location info
             }
         });
 
@@ -289,6 +353,7 @@ exports.uploadShopPhoto = async (req, res) => {
             success: true,
             message: 'Shop photo uploaded successfully',
             imageUrl: imageUrl,
+            fullImageUrl: `http://localhost:5001${imageUrl}`, // Add full URL for debugging
             vendor: {
                 image: vendor.image
             }

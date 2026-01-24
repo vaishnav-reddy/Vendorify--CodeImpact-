@@ -101,7 +101,9 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
               timestamp: position.timestamp,
             };
 
-            console.log('✅ Location obtained with accuracy:', coords.accuracy, 'meters');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ Location obtained with accuracy:', coords.accuracy, 'meters');
+            }
 
             // Get address information
             const addressInfo = await reverseGeocode(coords.lat, coords.lng);
@@ -134,11 +136,8 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
             setError(null);
             setLoading(false);
             
-            console.log('📍 Location updated with address:', newLocation);
-            
-            // Show location confirmation
-            if (window.showLocationToast !== false) {
-              console.log('✅ Location detected successfully');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('📍 Location updated with address:', newLocation);
             }
             
             if (onUpdate) onUpdate(newLocation);
@@ -164,7 +163,9 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
           }
         },
         (err) => {
-          console.warn('High accuracy failed, trying low accuracy:', err.message);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('High accuracy failed, trying low accuracy:', err.message);
+          }
           // Fallback to low accuracy
           tryLowAccuracy();
         },
@@ -187,7 +188,9 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
               timestamp: position.timestamp,
             };
 
-            console.log('⚠️ Location obtained with lower accuracy:', coords.accuracy, 'meters');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('⚠️ Location obtained with lower accuracy:', coords.accuracy, 'meters');
+            }
 
             // Get address information
             const addressInfo = await reverseGeocode(coords.lat, coords.lng);
@@ -220,7 +223,9 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
             setError(null);
             setLoading(false);
             
-            console.log('📍 Location updated (low accuracy):', newLocation);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('📍 Location updated (low accuracy):', newLocation);
+            }
             
             if (onUpdate) onUpdate(newLocation);
           } catch (err) {
@@ -244,18 +249,8 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
           }
         },
         (err) => {
-          console.log('ℹ️ Location access:', err.code === 1 ? 'Permission denied by user' : err.message);
-          
-          let errorMessage = 'Unable to get your location';
-          if (err.code === 1) {
-            errorMessage = 'Location permission denied. You can still browse vendors but navigation features will be limited.';
-          } else if (err.code === 2) {
-            errorMessage = 'Location information unavailable. Please check your internet connection.';
-          } else if (err.code === 3) {
-            errorMessage = 'Location request timeout. Please try again.';
-          }
-          
-          setError(errorMessage);
+          console.error('❌ Geolocation error (both attempts failed):', err);
+          setError(err.message || 'Unable to get your location. Please enable location services.');
           setLoading(false);
         },
         {

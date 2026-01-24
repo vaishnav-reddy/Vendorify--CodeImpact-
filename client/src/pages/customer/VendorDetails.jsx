@@ -12,6 +12,7 @@ const VendorDetails = () => {
   const { 
     vendors,
     getVendorById, 
+    fetchVendorById,
     getVendorMenu,
     getVendorReviews,
     addToCart, 
@@ -57,7 +58,7 @@ const VendorDetails = () => {
           setVendor(cachedVendor);
         }
         
-        const vendorData = await getVendorById(vendorId);
+        const vendorData = await fetchVendorById(vendorId);
         if (vendorData) {
           setVendor(vendorData);
         }
@@ -77,7 +78,7 @@ const VendorDetails = () => {
     };
     
     loadVendor();
-  }, [vendorId, getVendorById, getVendorMenu, getVendorReviews, vendors]);
+  }, [vendorId, fetchVendorById, getVendorMenu, getVendorReviews, vendors]);
 
   const liveLocation = getVendorLocation(vendorId);
 

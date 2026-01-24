@@ -425,4 +425,196 @@ textarea:focus-visible {
     opacity: 0.8;
     transform: scale(0.98);
   }
+  
+  /* Improve touch targets */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Enhanced responsive utilities */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Smooth scrolling and performance optimizations */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optimize animations for better performance */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
+}
+
+/* GPU acceleration for animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Optimize images for better loading */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Lazy loading optimization */
+img[loading="lazy"] {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+img[loading="lazy"].loaded {
+  opacity: 1;
+}
+
+/* Better text scaling on mobile */
+@media screen and (max-width: 640px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  /* Ensure minimum font sizes for readability */
+  body {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+/* Improved focus states for mobile */
+@media (hover: none) and (pointer: coarse) {
+  *:focus {
+    outline: 2px solid #CDF546;
+    outline-offset: 2px;
+  }
+}
+
+/* Safe area insets for devices with notches */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  
+  .safe-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Responsive container utilities */
+.container-responsive {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    max-width: 640px;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: 768px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    max-width: 1280px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .container-responsive {
+    max-width: 1536px;
+  }
+}
+
+/* Navbar Styles */
+.nav-link {
+  @apply text-gray-800 hover:text-emerald-700 transition-colors font-bold text-xs uppercase tracking-wider;
+}
+
+.icon-btn {
+  @apply p-2.5 text-gray-400 hover:text-emerald-700 hover:bg-gray-100 rounded-lg transition-all;
+}
+
+.logout-btn {
+  @apply bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2;
+}
+
+.mobile-link {
+  @apply text-gray-900 font-bold text-lg uppercase tracking-wider py-3 block hover:bg-yellow-50 px-4 rounded-xl transition-colors;
+}
+
+.signup-mobile {
+  @apply bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-8 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-wider shadow-xl hover:shadow-2xl transition-all mx-auto;
+}
+
+.logout-mobile {
+  @apply bg-gray-900 hover:bg-black text-white px-8 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-wider shadow-xl hover:shadow-2xl transition-all mx-auto;
+}
+
+/* Custom utility classes for carousel */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+/* Ensure images are visible and properly loaded */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Fix for carousel animation */
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Ensure carousel container has proper overflow handling */
+.overflow-hidden {
+  overflow: hidden;
 }

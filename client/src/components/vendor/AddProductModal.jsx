@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import { X, Upload, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AddProductModal = ({ isOpen, onClose, onAdd }) => {
@@ -15,31 +15,11 @@ const AddProductModal = ({ isOpen, onClose, onAdd }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Validate that onAdd is a function
-    if (typeof onAdd !== 'function') {
-      console.error('onAdd is not a function:', onAdd);
-      return;
-    }
-    
-    // Validate required fields
-    if (!formData.name.trim()) {
-      alert('Product name is required');
-      return;
-    }
-    
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      alert('Valid price is required');
-      return;
-    }
-    
     onAdd({
       ...formData,
       price: parseFloat(formData.price),
       id: Date.now().toString()
     });
-    
-    // Reset form
     setFormData({
       name: '',
       description: '',

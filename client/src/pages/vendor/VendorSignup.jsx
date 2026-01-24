@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Lock, Phone, User, Mail, ShoppingBag, Eye, EyeOff, Store, MapPin } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Lock, Phone, User, Mail, ShoppingBag, Eye, EyeOff, Store, MapPin, Navigation } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
+import { navigateToDashboard } from '../../utils/navigation';
 
 const VendorSignup = () => {
-  const { register } = useAuth();
+  const { register, isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ 
     name: '', 
     shopName: '',
@@ -14,12 +16,25 @@ const VendorSignup = () => {
     email: '',
     password: '', 
     confirmPassword: '',
-    address: ''
+    address: '',
+    latitude: null,
+    longitude: null
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+
+  // Redirect authenticated users to their dashboard
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('User already authenticated, redirecting to dashboard');
+      }
+      navigateToDashboard(navigate, user);
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const validateMobile = (mobile) => {
     const mobileRegex = /^[6-9]\d{9}$/;
@@ -70,16 +85,30 @@ const VendorSignup = () => {
         email: form.email || undefined,
         password: form.password,
         address: form.address,
+        latitude: form.latitude,
+        longitude: form.longitude,
         role: 'vendor'
       });
 
       if (result.success) {
         toast.success('Registration successful!');
+        // Navigate to vendor dashboard after successful registration
+        if (result.user) {
+          // Add a small delay to ensure toast is visible
+          setTimeout(() => {
+            navigateToDashboard(navigate, result.user);
+          }, 1000);
+        } else {
+          console.warn('Registration successful but no user data received');
+          // Fallback navigation
+          navigate('/vendor');
+        }
       } else {
         setError(result.message || 'Registration failed');
       }
     } catch (err) {
-      setError('Registration failed. Please try again.');
+      console.error('Vendor registration error:', err);
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -88,6 +117,85 @@ const VendorSignup = () => {
   const handleMobileChange = (e) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 10);
     setForm({ ...form, mobile: value });
+  };
+
+  const getCurrentLocation = () => {
+    setLocationLoading(true);
+    setError('');
+
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by this browser');
+      setLocationLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        try {
+          // Reverse geocoding to get address
+          const response = await fetch(
+            `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=YOUR_API_KEY`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.results && data.results.length > 0) {
+              const address = data.results[0].formatted;
+              setForm(prev => ({
+                ...prev,
+                address,
+                latitude,
+                longitude
+              }));
+              toast.success('Location detected successfully!');
+            }
+          } else {
+            // Fallback: just set coordinates
+            setForm(prev => ({
+              ...prev,
+              latitude,
+              longitude,
+              address: `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`
+            }));
+            toast.success('Location coordinates captured!');
+          }
+        } catch (error) {
+          // Fallback: just set coordinates
+          setForm(prev => ({
+            ...prev,
+            latitude,
+            longitude,
+            address: `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`
+          }));
+          toast.success('Location coordinates captured!');
+        }
+        
+        setLocationLoading(false);
+      },
+      (error) => {
+        let errorMessage = 'Unable to get location';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location access denied by user';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information unavailable';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out';
+            break;
+        }
+        setError(errorMessage);
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
   };
 
   return (
@@ -190,18 +298,43 @@ const VendorSignup = () => {
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-4">Shop Address</label>
-              <div className="relative group">
-                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1A6950] transition-colors">
-                  <MapPin size={18} />
+              <div className="space-y-3">
+                <div className="relative group">
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1A6950] transition-colors">
+                    <MapPin size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Enter your shop location or use GPS"
+                    className="w-full bg-gray-50/50 border-2 border-transparent pl-14 pr-4 py-4 rounded-[20px] text-gray-900 font-bold placeholder:text-gray-300 focus:bg-white focus:border-[#CDF546] focus:ring-0 transition-all outline-none"
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    aria-label="Shop address"
+                  />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Your shop location"
-                  className="w-full bg-gray-50/50 border-2 border-transparent pl-14 pr-4 py-4 rounded-[20px] text-gray-900 font-bold placeholder:text-gray-300 focus:bg-white focus:border-[#CDF546] focus:ring-0 transition-all outline-none"
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  aria-label="Shop address"
-                />
+                <button
+                  type="button"
+                  onClick={getCurrentLocation}
+                  disabled={locationLoading}
+                  className="w-full bg-[#CDF546] hover:bg-[#b8dd3e] disabled:bg-gray-300 disabled:cursor-not-allowed text-gray-900 font-bold py-3 px-4 rounded-[20px] text-sm transition-all flex items-center justify-center gap-2"
+                >
+                  {locationLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                      Getting Location...
+                    </>
+                  ) : (
+                    <>
+                      <Navigation size={16} />
+                      Use Current Location
+                    </>
+                  )}
+                </button>
+                {form.latitude && form.longitude && (
+                  <div className="text-xs text-green-600 font-medium text-center">
+                    ✓ Location captured: {form.latitude.toFixed(6)}, {form.longitude.toFixed(6)}
+                  </div>
+                )}
               </div>
             </div>
 

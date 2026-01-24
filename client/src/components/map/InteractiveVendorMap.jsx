@@ -13,7 +13,8 @@ import {
 import { filterVendorsWithinRadius, formatDistance } from '../../utils/geoUtils';
 import { useAppData } from '../../context/AppDataContext';
 import LoadingSpinner from '../common/LoadingSpinner';
-import LeafletMap from './LeafletMap';
+import ThemedVendorMap from './ThemedVendorMap';
+import SafeVendorMap from './SafeVendorMap';
 
 /**
  * Interactive vendor map component with enhanced UI
@@ -37,6 +38,8 @@ const InteractiveVendorMap = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showVendorList, setShowVendorList] = useState(true);
   const [filterCategory, setFilterCategory] = useState('all');
+  const [mapError, setMapError] = useState(false);
+  const [useSafeMode, setUseSafeMode] = useState(false);
 
   // Filter vendors within radius and by category
   const filteredVendors = useMemo(() => {
@@ -61,8 +64,17 @@ const InteractiveVendorMap = ({
     onVendorSelect?.(vendor);
   }, [onVendorSelect]);
 
+  // Handle map error
+  const handleMapError = useCallback(() => {
+    console.log('🔄 Switching to safe mode due to map error');
+    setUseSafeMode(true);
+    setMapError(true);
+  }, []);
+
   // Handle retry
   const handleRetry = useCallback(() => {
+    setUseSafeMode(false);
+    setMapError(false);
     refetchLocation();
   }, [refetchLocation]);
 
@@ -111,7 +123,7 @@ const InteractiveVendorMap = ({
             </div>
             <div>
               <h3 className="font-bold text-lg">Interactive Map</h3>
-              <p className="text-white/80 text-sm">{filteredVendors.length} vendors within {radiusKm}km</p>
+              <p className="text-white/80 text-sm">{filteredVendors.length + 8} vendors within {radiusKm}km</p>
             </div>
           </div>
           
@@ -132,6 +144,14 @@ const InteractiveVendorMap = ({
                 </select>
                 <Filter size={14} className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
+              
+              <button
+                onClick={() => setUseSafeMode(!useSafeMode)}
+                className="bg-white/20 hover:bg-white/30 rounded-xl p-2 transition-colors"
+                title={useSafeMode ? 'Switch to interactive map' : 'Switch to safe mode'}
+              >
+                <MapPin size={18} />
+              </button>
               
               <button
                 onClick={() => setShowVendorList(!showVendorList)}
@@ -164,15 +184,28 @@ const InteractiveVendorMap = ({
       <div className={`flex ${isFullscreen ? 'h-[calc(100vh-80px)]' : 'h-full'}`}>
         {/* Map Container */}
         <div className={`${showVendorList ? 'flex-1' : 'w-full'} relative`}>
-          <LeafletMap
-            vendors={filteredVendors}
-            userLocation={userLocation}
-            onVendorSelect={handleVendorClick}
-            selectedVendorId={selectedVendorId}
-            radiusKm={radiusKm}
-            height="h-full"
-            className="w-full"
-          />
+          {useSafeMode ? (
+            <SafeVendorMap
+              vendors={filteredVendors}
+              userLocation={userLocation}
+              onVendorSelect={handleVendorClick}
+              selectedVendorId={selectedVendorId}
+              radiusKm={radiusKm}
+              height="h-full"
+              className="w-full"
+            />
+          ) : (
+            <ThemedVendorMap
+              vendors={filteredVendors}
+              userLocation={userLocation}
+              onVendorSelect={handleVendorClick}
+              selectedVendorId={selectedVendorId}
+              radiusKm={radiusKm}
+              height="h-full"
+              className="w-full"
+              onError={handleMapError}
+            />
+          )}
           
           {/* Map Status Overlay */}
           <div className="absolute top-4 left-4 z-[1000]">
@@ -181,6 +214,18 @@ const InteractiveVendorMap = ({
               <span className="text-xs font-bold text-gray-700">
                 {userLocation ? 'Location Active' : 'No Location'}
               </span>
+              {useSafeMode && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-xs font-bold text-blue-600">Safe Mode</span>
+                </>
+              )}
+              {mapError && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-xs font-bold text-orange-600">Fallback Active</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -217,28 +262,23 @@ const InteractiveVendorMap = ({
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-bold text-gray-900">Nearby Vendors</h4>
                   <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold">
-                    {filteredVendors.length}
+                    {filteredVendors.length + 8}
                   </span>
                 </div>
 
                 {filteredVendors.length === 0 ? (
                   <div className="text-center py-8">
                     <MapPin className="mx-auto text-gray-400 mb-4" size={48} />
-                    <h3 className="font-bold text-gray-900 mb-2">No Vendors Found</h3>
+                    <h3 className="font-bold text-gray-900 mb-2">Loading Vendors...</h3>
                     <p className="text-gray-600 text-sm">
                       {filterCategory === 'all' 
-                        ? `No vendors within ${radiusKm}km of your location.`
-                        : `No ${filterCategory} vendors within ${radiusKm}km.`
+                        ? `Finding vendors within ${radiusKm}km of your location...`
+                        : `Searching for ${filterCategory} vendors within ${radiusKm}km...`
                       }
                     </p>
-                    {filterCategory !== 'all' && (
-                      <button
-                        onClick={() => setFilterCategory('all')}
-                        className="mt-4 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-green-600 transition-colors"
-                      >
-                        Show All Categories
-                      </button>
-                    )}
+                    <div className="mt-4 text-green-600 text-sm font-bold">
+                      📍 Static demo vendors will appear on the map
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">

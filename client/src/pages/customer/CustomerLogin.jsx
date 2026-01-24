@@ -1,16 +1,28 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, Mail, Phone, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { navigateToDashboard } from '../../utils/navigation';
 
 const CustomerLogin = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ mobile: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [useMobile, setUseMobile] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect authenticated users to their dashboard
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('User already authenticated, redirecting to dashboard');
+      }
+      navigateToDashboard(navigate, user);
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const validateMobile = (mobile) => /^[6-9]\d{9}$/.test(mobile);
 
@@ -36,11 +48,24 @@ const CustomerLogin = () => {
     setError('');
     try {
       const result = await login({ [useMobile ? 'mobile' : 'email']: identifier, password: form.password, role: 'customer' });
-      if (!result.success) {
+      if (result.success) {
+        // Navigate to customer dashboard after successful login
+        if (result.user) {
+          // Add a small delay to ensure any success messages are visible
+          setTimeout(() => {
+            navigateToDashboard(navigate, result.user);
+          }, 500);
+        } else {
+          console.warn('Login successful but no user data received');
+          // Fallback navigation
+          navigate('/customer');
+        }
+      } else {
         setError(result.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
-      setError('Login failed. Please check your credentials.');
+      console.error('Customer login error:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }

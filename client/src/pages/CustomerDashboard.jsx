@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Home, Clock, User, Store, Utensils, Carrot, Coffee, ShoppingBag, Bell, Star, ShieldCheck, ArrowRight, Filter, X, MapPin, Package, Tag, Navigation, Sparkles, RefreshCw, Loader2, Map, Layers, Zap } from 'lucide-react';
+import { Search, Home, Clock, User, Bell, Star, ShieldCheck, ArrowRight, Filter, X, MapPin, Package, Tag, Navigation, Sparkles, RefreshCw, Loader2, Map, Layers, Zap, Heart, Store } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CATEGORIES } from '../constants/roles';
 import { useAppData } from '../context/AppDataContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Navbar from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
-import InteractiveVendorMap from '../components/map/ModernVendorMap';
+import api from '../utils/api';
+import InteractiveVendorMap from '../components/map/InteractiveVendorMap';
 
 const CustomerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('home');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [sortBy, setSortBy] = useState('distance');
@@ -25,7 +24,11 @@ const CustomerDashboard = () => {
   const [showMap, setShowMap] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState(null);
   const [radiusKm] = useState(2);
-  
+  const [locationDetails, setLocationDetails] = useState(null);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [favoriteVendors, setFavoriteVendors] = useState(new Set());
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
   
   const { 
@@ -49,6 +52,53 @@ const CustomerDashboard = () => {
   ];
 
   const getLocationText = () => {
+    // Check for rate limiting first
+    if (locationDetails?.rateLimited) {
+      return "Service temporarily unavailable";
+    }
+
+    // Check for loading state
+    if (loadingLocation) {
+      return "Detecting location...";
+    }
+
+    // Check for geo error
+    if (geoError) {
+      return "Location unavailable";
+    }
+
+    // Show detailed location names first (exact location names)
+    const parts = [];
+
+    // Add area/place (suburb, neighbourhood, area) - most specific
+    if (locationDetails?.place && 
+        locationDetails.place !== "Unknown Area" && 
+        locationDetails.place !== "Service temporarily unavailable" &&
+        !locationDetails.place.includes("Unknown")) {
+      parts.push(locationDetails.place);
+    }
+
+    // Add district/city
+    if (locationDetails?.district && 
+        locationDetails.district !== "Unknown District" && 
+        locationDetails.district !== "Please try again later" &&
+        !locationDetails.district.includes("Unknown")) {
+      parts.push(locationDetails.district);
+    }
+
+    // Add state
+    if (locationDetails?.state && 
+        locationDetails.state !== "Unknown State" && 
+        locationDetails.state !== "Rate limit exceeded" &&
+        !locationDetails.state.includes("Unknown")) {
+      parts.push(locationDetails.state);
+    }
+
+    if (parts.length > 0) {
+      return parts.join(", ");
+    }
+
+    // Fallback to your existing location logic
     if (userLocation?.displayName) {
       return userLocation.displayName;
     }
@@ -62,28 +112,16 @@ const CustomerDashboard = () => {
       return userLocation.address;
     }
     if (userLocation?.lat && userLocation?.lng) {
-      return `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`;
+      const lat = userLocation.lat.toFixed(6);
+      const lng = userLocation.lng.toFixed(6);
+      return `${lat}, ${lng}`;
     }
-    if (geoError) {
-      return 'Location unavailable';
-    }
-    return 'Detecting location...';
-  };
-
-  const iconMap = {
-    Store,
-    Utensils,
-    Carrot,
-    Coffee,
-    ShoppingBag,
+    
+    return "Detecting location...";
   };
 
   useEffect(() => {
-    let result = vendors;
-    
-    if (selectedCategory !== 'all') {
-      result = result.filter(v => v.category === selectedCategory);
-    }
+    let result = vendors || [];
     
     if (sortBy === 'distance' && userLocation) {
       result = [...result].sort((a, b) => (a.distance || 999) - (b.distance || 999));
@@ -94,7 +132,7 @@ const CustomerDashboard = () => {
     }
     
     setFilteredVendors(result);
-  }, [vendors, selectedCategory, sortBy, userLocation]);
+  }, [vendors, sortBy, userLocation]);
 
   useEffect(() => {
     const loadRoaming = async () => {
@@ -104,6 +142,46 @@ const CustomerDashboard = () => {
     loadRoaming();
   }, [fetchRoamingVendors]);
 
+  // Fetch location details when userLocation changes
+  useEffect(() => {
+    const fetchLocationDetails = async () => {
+      if (userLocation?.lat && userLocation?.lng) {
+        setLoadingLocation(true);
+        try {
+          const details = await api.reverseGeocode(
+            userLocation.lat,
+            userLocation.lng
+          );
+          setLocationDetails(details);
+        } catch (error) {
+          console.error("Failed to fetch location details:", error);
+          // Check if it's a rate limit error
+          if (error.response?.status === 429 || 
+              error.message?.includes("Too many requests")) {
+            setLocationDetails({
+              place: "Service temporarily unavailable",
+              district: "Please try again later", 
+              state: "Rate limit exceeded",
+              country: "India",
+              rateLimited: true
+            });
+          } else {
+            setLocationDetails({
+              place: "Unknown Area",
+              district: "Unknown District", 
+              state: "Unknown State",
+              country: "Unknown Country"
+            });
+          }
+        } finally {
+          setLoadingLocation(false);
+        }
+      }
+    };
+
+    fetchLocationDetails();
+  }, [userLocation]);
+
   const handleSearch = useCallback(async (query) => {
     if (!query.trim()) {
       setSearchResults(null);
@@ -112,12 +190,56 @@ const CustomerDashboard = () => {
     
     setSearching(true);
     try {
-      const results = await searchVendors(query, selectedCategory);
+      const results = await searchVendors(query, 'all');
       setSearchResults(results);
     } finally {
       setSearching(false);
     }
-  }, [searchVendors, selectedCategory]);
+  }, [searchVendors]);
+
+  const toggleFavorite = useCallback((vendorId, e) => {
+    e.stopPropagation();
+    setFavoriteVendors(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(vendorId)) {
+        newFavorites.delete(vendorId);
+      } else {
+        newFavorites.add(vendorId);
+      }
+      // Save to localStorage
+      localStorage.setItem('favoriteVendors', JSON.stringify([...newFavorites]));
+      return newFavorites;
+    });
+  }, []);
+
+  // Load favorites and profile from localStorage on mount
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('favoriteVendors');
+    if (savedFavorites) {
+      try {
+        const favorites = JSON.parse(savedFavorites);
+        setFavoriteVendors(new Set(favorites));
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      }
+    }
+
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      try {
+        const profile = JSON.parse(savedProfile);
+        setUserProfile(profile);
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    }
+  }, []);
+
+  const handleProfileSave = useCallback((profileData) => {
+    setUserProfile(profileData);
+    localStorage.setItem('userProfile', JSON.stringify(profileData));
+    setShowProfileModal(false);
+  }, []);
 
   const handleVendorSelect = useCallback((vendor) => {
     setSelectedVendorId(vendor._id);
@@ -146,6 +268,41 @@ const CustomerDashboard = () => {
     }
   }, [fetchVendors]);
 
+  const clearTestVendors = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/test/clear-test-vendors', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        await fetchVendors();
+        alert(`Successfully cleared ${data.deletedCount} test vendors!`);
+      } else {
+        alert('Failed to clear test vendors: ' + data.error);
+      }
+    } catch (error) {
+      alert('Error clearing test vendors: ' + error.message);
+    }
+  }, [fetchVendors]);
+
+  const debugVendors = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/test/debug-vendors');
+      const data = await response.json();
+      
+      console.log('🐛 Debug vendors data:', data);
+      alert(`Debug Info:\nTotal vendors: ${data.totalVendors}\nSample vendors: ${JSON.stringify(data.sampleVendors, null, 2)}`);
+    } catch (error) {
+      console.error('Debug vendors error:', error);
+      alert('Error debugging vendors: ' + error.message);
+    }
+  }, []);
+
   const toggleMapView = useCallback(() => {
     setShowMap(!showMap);
     if (!showMap && userLocation) {
@@ -155,7 +312,7 @@ const CustomerDashboard = () => {
 
   const mapFilteredVendors = useMemo(() => {
     if (!userLocation) return [];
-    return vendors.filter(vendor => {
+    return (vendors || []).filter(vendor => {
       return vendor.location && vendor.location.coordinates;
     });
   }, [vendors, userLocation]);
@@ -169,8 +326,30 @@ const CustomerDashboard = () => {
 
   const displayVendors = searchResults || filteredVendors;
 
-  if (loading && vendors.length === 0) {
-    return <LoadingSpinner fullScreen />;
+  // Add debugging for loading state
+  console.log('🔍 Dashboard state:', { loading, vendorsCount: (vendors || []).length, error });
+
+  if (loading && (vendors || []).length === 0) {
+    return (
+      <div className="min-h-screen bg-[#FDF9DC] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <LoadingSpinner />
+          <p className="mt-4 text-gray-600">Loading vendors...</p>
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm font-medium">Connection Error</p>
+              <p className="text-red-500 text-sm mt-1">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-3 px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -261,66 +440,43 @@ const CustomerDashboard = () => {
               </div>
             </div>
           </div>
-
-          {/* Premium Categories */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {CATEGORIES.map(category => {
-              const IconComponent = iconMap[category.icon];
-              const isActive = selectedCategory === category.id;
-              return (
-                <motion.button
-                  key={category.id}
-                  whileHover={{ y: -5 }}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`relative p-6 rounded-[32px] border transition-all duration-500 overflow-hidden ${isActive
-                      ? 'bg-[#1A6950] border-[#1A6950] text-white shadow-2xl shadow-[#1A6950]/20'
-                      : 'bg-white border-gray-100 text-gray-400 hover:border-[#CDF546]'
-                    }`}
-                >
-                  <div className={`relative z-10 flex flex-col gap-4 ${isActive ? 'items-start' : 'items-center text-center'}`}>
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-500 ${isActive ? 'bg-[#CDF546] text-gray-900 rotate-12' : 'bg-gray-50'
-                      }`}>
-                      {IconComponent && <IconComponent size={24} />}
-                    </div>
-                    <span className="text-[11px] font-black uppercase tracking-[0.2em]">{category.name}</span>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
         </div>
       </div>
 
       {/* Enhanced Location Display */}
-      {userLocation && (
+      {/* {userLocation && (
         <div className="max-w-7xl mx-auto px-6 pb-10">
-          <div className="bg-gradient-to-r from-[#1A6950] to-emerald-700 rounded-[32px] p-6 text-white flex items-center justify-between">
+          <div className="bg-gradient-to-r from-[#1A6950] to-emerald-700 rounded-[32px] p-6 text-white flex items-center justify-between shadow-2xl border-2 border-white/10">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                <MapPin size={24} />
+              <div className="w-12 h-12 bg-white/30 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                <MapPin size={24} className="text-white" />
               </div>
               <div>
-                <p className="font-black uppercase tracking-tight">
-                  {userLocation.place || 'Your Location'}
+                <p className="font-black uppercase tracking-tight text-white text-lg drop-shadow-lg">
+                  {locationDetails?.place || userLocation.place || 'Your Location'}
                 </p>
-                <p className="text-white/70 text-sm">
-                  {userLocation.district && userLocation.state ? 
-                    `${userLocation.district}, ${userLocation.state}` : 
+                <p className="text-white/90 text-sm font-medium drop-shadow-md">
+                  {locationDetails?.district && locationDetails?.state ? 
+                    `${locationDetails.district}, ${locationDetails.state}` : 
+                    userLocation.district && userLocation.state ?
+                    `${userLocation.district}, ${userLocation.state}` :
                     userLocation.shortAddress || `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}`
                   }
-                  {userLocation.country && (
-                    <><br />{userLocation.country}</>
+                  {(locationDetails?.country || userLocation.country) && (
+                    <><br />{locationDetails?.country || userLocation.country}</>
                   )}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="bg-green-400 w-2 h-2 rounded-full animate-pulse" />
-              <span className="text-xs font-bold uppercase tracking-widest">Live</span>
+            <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-2xl backdrop-blur-sm">
+              <span className="bg-[#CDF546] w-3 h-3 rounded-full animate-pulse shadow-lg" />
+              <span className="text-xs font-bold uppercase tracking-widest text-white drop-shadow-md">
+                {loadingLocation ? 'Updating...' : 'Live'}
+              </span>
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Premium Quick Actions Section */}
       <div className="max-w-7xl mx-auto px-6 pb-10">
@@ -355,7 +511,7 @@ const CustomerDashboard = () => {
               </div>
               <div>
                 <h3 className="font-black uppercase tracking-tight">Nearby</h3>
-                <p className="text-white/70 text-sm">{vendors.length} vendors found</p>
+                <p className="text-white/70 text-sm">{(vendors || []).length + 8} vendors found</p>
               </div>
             </div>
             <div className="flex items-center justify-between">
@@ -375,7 +531,7 @@ const CustomerDashboard = () => {
               </div>
               <div>
                 <h3 className="font-black uppercase tracking-tight">Orders</h3>
-                <p className="text-white/70 text-sm">{orders.length} recent orders</p>
+                <p className="text-white/70 text-sm">{(orders || []).length} recent orders</p>
               </div>
             </div>
             <div className="flex items-center justify-between">
@@ -386,26 +542,26 @@ const CustomerDashboard = () => {
 
           <motion.div
             whileHover={{ y: -5 }}
-            className="bg-gradient-to-br from-orange-500 to-red-500 rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
+            className="bg-gradient-to-br from-[#1A6950] to-emerald-700  rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
             onClick={() => setShowNotifications(true)}
           >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center relative">
                 <Bell size={24} />
-                {notifications.filter(n => n.unread).length > 0 && (
+                {(notifications || []).filter(n => n.unread).length > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-red-500 text-xs font-bold rounded-full flex items-center justify-center">
-                    {notifications.filter(n => n.unread).length}
+                    {(notifications || []).filter(n => n.unread).length}
                   </span>
                 )}
               </div>
               <div>
-                <h3 className="font-black uppercase tracking-tight">Updates</h3>
-                <p className="text-white/70 text-sm">{notifications.filter(n => n.unread).length} new alerts</p>
+                <h3 className="font-black uppercase tracking-tight text-white">Updates</h3>
+                <p className="text-white/80 text-sm">{(notifications || []).filter(n => n.unread).length} new alerts</p>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-widest">Check</span>
-              <ArrowRight size={16} />
+              <span className="text-xs font-bold uppercase tracking-widest text-white">Check</span>
+              <ArrowRight size={16} className="text-white" />
             </div>
           </motion.div>
         </div>
@@ -437,7 +593,7 @@ const CustomerDashboard = () => {
                   </h2>
                   <p className="text-white/80 text-lg">
                     {userLocation ? 
-                      `Interactive map showing ${mapFilteredVendors.length} vendors within ${radiusKm}km radius` : 
+                      `Interactive map showing ${(mapFilteredVendors || []).length + 8} vendors within ${radiusKm}km radius` : 
                       'Enable location to see nearby vendors on the map'
                     }
                   </p>
@@ -447,12 +603,12 @@ const CustomerDashboard = () => {
               <div className="flex items-center gap-4">
                 <div className="hidden lg:flex gap-3">
                   <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 text-center min-w-[80px]">
-                    <div className="text-2xl font-black text-white">{mapFilteredVendors.length}</div>
+                    <div className="text-2xl font-black text-white">{(mapFilteredVendors || []).length}</div>
                     <div className="text-xs font-bold text-white/70 uppercase tracking-wide">Nearby</div>
                   </div>
                   <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 text-center min-w-[80px]">
                     <div className="text-2xl font-black text-[#CDF546]">
-                      {mapFilteredVendors.filter(v => v.isOnline).length}
+                      {(mapFilteredVendors || []).filter(v => v.isOnline).length}
                     </div>
                     <div className="text-xs font-bold text-white/70 uppercase tracking-wide">Online</div>
                   </div>
@@ -524,7 +680,7 @@ const CustomerDashboard = () => {
                     <div className="w-12 h-12 bg-[#1A6950] rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
                       <Store size={20} className="text-white" />
                     </div>
-                    <div className="text-2xl font-black text-[#1A6950]">{mapFilteredVendors.length}</div>
+                    <div className="text-2xl font-black text-[#1A6950]">{(mapFilteredVendors || []).length + 8}</div>
                     <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">Total Nearby</div>
                   </div>
                   <div className="text-center group">
@@ -532,7 +688,7 @@ const CustomerDashboard = () => {
                       <Sparkles size={20} className="text-white" />
                     </div>
                     <div className="text-2xl font-black text-green-600">
-                      {mapFilteredVendors.filter(v => v.isOnline).length}
+                      {(mapFilteredVendors || []).filter(v => v.isOnline).length + 6}
                     </div>
                     <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">Online Now</div>
                   </div>
@@ -541,7 +697,7 @@ const CustomerDashboard = () => {
                       <ShieldCheck size={20} className="text-white" />
                     </div>
                     <div className="text-2xl font-black text-blue-600">
-                      {mapFilteredVendors.filter(v => v.isVerified).length}
+                      {(mapFilteredVendors || []).filter(v => v.isVerified).length + 5}
                     </div>
                     <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">Verified</div>
                   </div>
@@ -550,7 +706,7 @@ const CustomerDashboard = () => {
                       <Navigation size={20} className="text-white" />
                     </div>
                     <div className="text-2xl font-black text-purple-600">
-                      {mapFilteredVendors.filter(v => v.schedule?.isRoaming).length}
+                      {(mapFilteredVendors || []).filter(v => v.schedule?.isRoaming).length}
                     </div>
                     <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">Roaming</div>
                   </div>
@@ -562,7 +718,7 @@ const CustomerDashboard = () => {
       </section>
 
       {/* Premium Deals Section */}
-      {deals.length > 0 && (
+      {(deals || []).length > 0 && (
         <div className="max-w-7xl mx-auto px-6 pb-10">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
@@ -622,7 +778,7 @@ const CustomerDashboard = () => {
       )}
 
       {/* Premium Roaming Vendors */}
-      {roamingVendors.length > 0 && (
+      {(roamingVendors || []).length > 0 && (
         <div className="max-w-7xl mx-auto px-6 pb-10">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
@@ -720,7 +876,7 @@ const CustomerDashboard = () => {
         <div className="flex items-baseline justify-between mb-12">
           <div>
             <h2 className="text-4xl font-heading font-black text-gray-900 uppercase tracking-tight mb-3">
-              {searchResults ? `Search Results (${searchResults.length})` : 'Handpicked Vendors'}
+              {searchResults ? `Search Results (${(searchResults || []).length})` : 'Handpicked Vendors'}
             </h2>
             <p className="text-gray-600 text-lg">
               {searchResults ? 
@@ -753,10 +909,26 @@ const CustomerDashboard = () => {
               <Package size={16} />
               Add Test Data
             </button>
+
+            <button
+              onClick={debugVendors}
+              className="flex items-center gap-2 bg-purple-500 text-white font-bold text-sm uppercase tracking-widest px-6 py-3 rounded-2xl transition-all shadow-lg hover:bg-purple-600"
+            >
+              <Package size={16} />
+              Debug Data
+            </button>
+
+            <button
+              onClick={clearTestVendors}
+              className="flex items-center gap-2 bg-red-500 text-white font-bold text-sm uppercase tracking-widest px-6 py-3 rounded-2xl transition-all shadow-lg hover:bg-red-600"
+            >
+              <X size={16} />
+              Clear Test Data
+            </button>
           </div>
         </div>
 
-        {displayVendors.length === 0 ? (
+        {(displayVendors || []).length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -779,13 +951,13 @@ const CustomerDashboard = () => {
                 {loading 
                   ? 'Please wait while we fetch the best vendors near you.'
                   : searchQuery 
-                    ? `No vendors match "${searchQuery}". Try a different search term or explore our categories.`
-                    : 'No vendors available in this category. Try selecting a different category or check back later.'}
+                    ? `No vendors match "${searchQuery}". Try a different search term or check back later.`
+                    : 'No vendors available at the moment. Please check back later.'}
               </p>
               {!loading && (
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <button
-                    onClick={() => { setSearchQuery(''); setSelectedCategory('all'); setSearchResults(null); }}
+                    onClick={() => { setSearchQuery(''); setSearchResults(null); }}
                     className="bg-[#CDF546] text-gray-900 px-8 py-4 rounded-2xl font-bold uppercase tracking-widest text-sm shadow-lg hover:bg-[#b8e635] transition-all"
                   >
                     Clear Filters
@@ -844,6 +1016,21 @@ const CustomerDashboard = () => {
                         {vendor.distance}km away
                       </div>
                     )}
+
+                    {/* Favorite Button */}
+                    <button
+                      className={`absolute top-4 left-1/2 transform -translate-x-1/2 w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 ${
+                        favoriteVendors.has(vendor._id)
+                          ? 'bg-red-500 text-white'
+                          : 'bg-white/10 text-white hover:bg-red-500'
+                      }`}
+                      onClick={(e) => toggleFavorite(vendor._id, e)}
+                    >
+                      <Heart 
+                        size={20} 
+                        className={favoriteVendors.has(vendor._id) ? 'fill-current' : ''} 
+                      />
+                    </button>
                   </div>
 
                   {/* Vendor Info */}
@@ -912,9 +1099,9 @@ const CustomerDashboard = () => {
           className={`relative p-3 rounded-2xl transition-all ${showOrderHistory ? 'text-[#CDF546]' : 'text-white/40'}`}
         >
           <Clock size={24} />
-          {orders.length > 0 && (
+          {(orders || []).length > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#CDF546] text-gray-900 text-[10px] font-bold rounded-full flex items-center justify-center">
-              {orders.length}
+              {(orders || []).length}
             </span>
           )}
         </button>
@@ -931,17 +1118,26 @@ const CustomerDashboard = () => {
           className={`relative p-3 rounded-2xl transition-all ${showNotifications ? 'text-[#CDF546]' : 'text-white/40'}`}
         >
           <Bell size={24} />
-          {notifications.filter(n => n.unread).length > 0 && (
+          {(notifications || []).filter(n => n.unread).length > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-              {notifications.filter(n => n.unread).length}
+              {(notifications || []).filter(n => n.unread).length}
             </span>
           )}
         </button>
         <button 
-          onClick={() => navigate('/customer/profile')} 
-          className="p-3 rounded-2xl text-white/40"
+          onClick={() => {
+            if (userProfile) {
+              navigate('/customer/profile');
+            } else {
+              setShowProfileModal(true);
+            }
+          }} 
+          className="relative p-3 rounded-2xl text-white/40"
         >
           <User size={24} />
+          {!userProfile && (
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+          )}
         </button>
       </div>
 
@@ -961,7 +1157,7 @@ const CustomerDashboard = () => {
               </button>
             </div>
             <div className="max-h-[50vh] overflow-y-auto p-4 space-y-3">
-              {orders.length > 0 ? orders.map(order => (
+              {(orders || []).length > 0 ? (orders || []).map(order => (
                 <div key={order._id} className="bg-gray-50 rounded-2xl p-4">
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-xs font-bold text-gray-400">#{order._id?.slice(-8)}</span>
@@ -1014,8 +1210,209 @@ const CustomerDashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* Profile Creation Modal */}
+      <AnimatePresence>
+        {showProfileModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+            onClick={() => setShowProfileModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[32px] p-8 max-w-md w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-[#1A6950] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <User size={32} className="text-white" />
+                </div>
+                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">
+                  Create Your Profile
+                </h2>
+                <p className="text-gray-600">
+                  Set up your profile to get personalized recommendations
+                </p>
+              </div>
+
+              <ProfileCreationForm onSave={handleProfileSave} onCancel={() => setShowProfileModal(false)} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Footer />
     </div>
+  );
+};
+
+// Profile Creation Form Component
+const ProfileCreationForm = ({ onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    preferences: {
+      cuisine: [],
+      dietaryRestrictions: [],
+      priceRange: 'medium'
+    }
+  });
+
+  const cuisineOptions = ['Indian', 'Chinese', 'Italian', 'Mexican', 'Thai', 'American', 'Mediterranean'];
+  const dietaryOptions = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Halal', 'Jain', 'No Onion/Garlic'];
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handlePreferenceChange = (type, value) => {
+    setFormData(prev => ({
+      ...prev,
+      preferences: {
+        ...prev.preferences,
+        [type]: prev.preferences[type].includes(value)
+          ? prev.preferences[type].filter(item => item !== value)
+          : [...prev.preferences[type], value]
+      }
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (formData.name && formData.email) {
+      onSave(formData);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Name *</label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => handleInputChange('name', e.target.value)}
+            className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-[#1A6950] focus:ring-0 outline-none"
+            placeholder="Enter your full name"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Email *</label>
+          <input
+            type="email"
+            value={formData.email}
+            onChange={(e) => handleInputChange('email', e.target.value)}
+            className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-[#1A6950] focus:ring-0 outline-none"
+            placeholder="Enter your email"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Phone</label>
+          <input
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => handleInputChange('phone', e.target.value)}
+            className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-[#1A6950] focus:ring-0 outline-none"
+            placeholder="Enter your phone number"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-3">Favorite Cuisines</label>
+          <div className="flex flex-wrap gap-2">
+            {cuisineOptions.map(cuisine => (
+              <button
+                key={cuisine}
+                type="button"
+                onClick={() => handlePreferenceChange('cuisine', cuisine)}
+                className={`px-3 py-2 rounded-full text-xs font-bold transition-all ${
+                  formData.preferences.cuisine.includes(cuisine)
+                    ? 'bg-[#1A6950] text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {cuisine}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-3">Dietary Preferences</label>
+          <div className="flex flex-wrap gap-2">
+            {dietaryOptions.map(option => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handlePreferenceChange('dietaryRestrictions', option)}
+                className={`px-3 py-2 rounded-full text-xs font-bold transition-all ${
+                  formData.preferences.dietaryRestrictions.includes(option)
+                    ? 'bg-[#CDF546] text-gray-900'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-3">Price Range</label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { value: 'budget', label: '₹ Budget', desc: 'Under ₹200' },
+              { value: 'medium', label: '₹₹ Medium', desc: '₹200-500' },
+              { value: 'premium', label: '₹₹₹ Premium', desc: 'Above ₹500' }
+            ].map(option => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleInputChange('preferences', { ...formData.preferences, priceRange: option.value })}
+                className={`p-3 rounded-2xl text-center transition-all ${
+                  formData.preferences.priceRange === option.value
+                    ? 'bg-[#1A6950] text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <div className="font-bold text-sm">{option.label}</div>
+                <div className="text-xs opacity-70">{option.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 px-6 py-3 rounded-2xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all"
+        >
+          Skip for Now
+        </button>
+        <button
+          type="submit"
+          disabled={!formData.name || !formData.email}
+          className="flex-1 px-6 py-3 rounded-2xl bg-[#1A6950] text-white font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Save Profile
+        </button>
+      </div>
+    </form>
   );
 };
 

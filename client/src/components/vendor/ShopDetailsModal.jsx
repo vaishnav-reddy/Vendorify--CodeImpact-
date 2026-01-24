@@ -25,8 +25,9 @@ const ShopDetailsModal = ({ isOpen, onClose, onSave, initialData }) => {
 
   useEffect(() => {
     if (initialData) {
+      console.log('🔄 ShopDetailsModal received initialData:', initialData);
       
-      // FIXED: Properly populate form data including image
+      // Populate form data
       setFormData({
         shopName: initialData.shopName || '',
         ownerName: initialData.ownerName || '',
@@ -38,13 +39,20 @@ const ShopDetailsModal = ({ isOpen, onClose, onSave, initialData }) => {
         services: initialData.services || []
       });
       
-      // FIXED: Set image preview if image exists
-      if (initialData.image) {
-        const fullImageUrl = initialData.image.startsWith('http') 
-          ? initialData.image 
-          : `${window.location.origin}${initialData.image}`;
+      // Set image preview if image exists
+      if (initialData.image || initialData.shopImage) {
+        const imageUrl = initialData.image || initialData.shopImage;
+        const fullImageUrl = apiClient.getImageUrl(imageUrl);
+          
+        console.log('🖼️ Loading existing image in modal:', { imageUrl, fullImageUrl });
+        
         setImagePreview(fullImageUrl);
-        setShopImage(initialData.image); // ADDED: Set shopImage state to preserve uploaded image
+        setShopImage(imageUrl);
+      } else {
+        console.log('📷 No existing image found in initialData');
+        // Clear any previous image state
+        setImagePreview(null);
+        setShopImage(null);
       }
     }
   }, [initialData]);
@@ -70,24 +78,39 @@ const ShopDetailsModal = ({ isOpen, onClose, onSave, initialData }) => {
         setCurrentLocation({ latitude, longitude });
         
         try {
-          // Update live location in backend
-          const response = await apiClient.updateLiveLocation(latitude, longitude);
+          // Get readable location name first
+          const readableAddress = await apiClient.getReadableLocation(latitude, longitude);
+          console.log('🌍 Readable address:', readableAddress);
           
-          // FIXED: Only update address, preserve all other form data
-          if (response.success) {
-            setFormData(prev => ({
-              ...prev, // PRESERVE all existing form data
-              address: response.vendor.address // ONLY update address
-            }));
+          // Update the form with readable address immediately
+          setFormData(prev => ({
+            ...prev,
+            address: readableAddress
+          }));
+          
+          // Then update backend location
+          try {
+            const response = await apiClient.updateLiveLocation(latitude, longitude);
+            if (response.success && response.vendor.address) {
+              // If backend returns a better address, use it
+              setFormData(prev => ({
+                ...prev,
+                address: response.vendor.address
+              }));
+            }
             toast.success('Location detected and updated!');
+          } catch (backendError) {
+            console.warn('Backend location update failed, using client-side geocoding');
+            toast.success('Location detected!');
           }
         } catch (error) {
-          console.error('Failed to update live location:', error);
-          // FIXED: Fallback - only update address, preserve other data
+          console.error('Failed to get readable location:', error);
+          // Final fallback to coordinates
           setFormData(prev => ({
-            ...prev, // PRESERVE all existing form data
-            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}` // ONLY update address
+            ...prev,
+            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
           }));
+          toast.warning('Location detected but address lookup failed');
         }
         
         setIsDetectingLocation(false);
@@ -104,9 +127,6 @@ const ShopDetailsModal = ({ isOpen, onClose, onSave, initialData }) => {
             break;
           case error.TIMEOUT:
             errorMessage = 'Location request timed out';
-            break;
-          default:
-            errorMessage = 'Failed to get location';
             break;
         }
         
@@ -143,22 +163,51 @@ const ShopDetailsModal = ({ isOpen, onClose, onSave, initialData }) => {
       const formData = new FormData();
       formData.append('shopPhoto', file);
       
+      console.log('🔄 Uploading file:', file.name, file.size);
+      
       const response = await apiClient.uploadShopPhoto(formData);
       
+      console.log('📤 Upload response:', response);
+      
       if (response.success) {
-        // Set both preview and shop image with full URL
-        const fullImageUrl = response.imageUrl.startsWith('http') 
-          ? response.imageUrl 
-          : `${window.location.origin}${response.imageUrl}`;
+        // Use the image URL from server response
+        const imageUrl = response.imageUrl;
+        const fullImageUrl = response.fullImageUrl || apiClient.getImageUrl(imageUrl);
           
+        console.log('🖼️ Setting image preview:', fullImageUrl);
+        
+        // Set the image preview immediately
         setImagePreview(fullImageUrl);
-        setShopImage(response.imageUrl); // Keep relative path for database
-        toast.success('Shop photo uploaded successfully!');
+        setShopImage(imageUrl); // This will be saved when form is submitted
+        
+        toast.success('Image uploaded! Click "Save Changes" to save your profile.');
+      } else {
+        console.error('❌ Upload failed:', response);
+        toast.error(response.message || 'Upload failed');
       }
     } catch (error) {
-      console.error('Failed to upload shop photo:', error);
-      toast.error('Failed to upload shop photo');
+      console.error('❌ Upload error:', error);
+      toast.error('Failed to upload image');
     } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleCameraCapture = async () => {
+    try {
+      setIsUploading(true);
+      toast.info('Opening camera...');
+      
+      const photoBlob = await apiClient.capturePhotoFromCamera();
+      
+      // Create a file from the blob
+      const file = new File([photoBlob], 'camera-photo.jpg', { type: 'image/jpeg' });
+      
+      // Upload the captured photo
+      await handleImageUpload(file);
+    } catch (error) {
+      console.error('Camera capture failed:', error);
+      toast.error(error.message || 'Failed to capture photo from camera');
       setIsUploading(false);
     }
   };
@@ -168,7 +217,7 @@ const ShopDetailsModal = ({ isOpen, onClose, onSave, initialData }) => {
     setIsSaving(true);
 
     try {
-      // FIXED: Include image in update data only if it exists
+      // Prepare update data with all form fields
       const updateData = {
         ...formData,
         schedule: {
@@ -176,25 +225,40 @@ const ShopDetailsModal = ({ isOpen, onClose, onSave, initialData }) => {
         }
       };
 
-      // FIXED: Include image if uploaded or existing
+      // IMPORTANT: Include image if uploaded
       if (shopImage) {
         updateData.image = shopImage;
+        console.log('💾 Including image in profile update:', shopImage);
       }
 
-      // FIXED: Include coordinates if available (location-only update)
+      // Include coordinates if available
       if (currentLocation) {
         updateData.coordinates = [currentLocation.longitude, currentLocation.latitude];
       }
 
+      console.log('📝 Updating profile with data:', updateData);
+
       const response = await apiClient.updateVendorProfile(updateData);
       
+      console.log('📤 Profile update response:', response);
+      
       if (response.success) {
-        toast.success('Shop profile updated successfully!');
-        onSave(response.vendor);
-        onClose(); // FIXED: Ensure modal closes after successful save
+        toast.success('Profile updated successfully!');
+        
+        // Pass the updated data back to parent component
+        const updatedVendorData = {
+          ...response.vendor,
+          image: response.vendor.image || shopImage // Ensure image is included
+        };
+        
+        console.log('✅ Calling onSave with:', updatedVendorData);
+        onSave(updatedVendorData);
+        onClose();
+      } else {
+        toast.error(response.message || 'Failed to update profile');
       }
     } catch (error) {
-      console.error('Failed to update profile:', error);
+      console.error('❌ Profile update error:', error);
       toast.error('Failed to update profile');
     } finally {
       setIsSaving(false);
@@ -244,38 +308,88 @@ const ShopDetailsModal = ({ isOpen, onClose, onSave, initialData }) => {
             {/* Shop Image Upload */}
             <div className="text-center">
               <div className="relative inline-block">
-                <div className="w-32 h-32 bg-gray-100 rounded-full overflow-hidden border-4 border-white shadow-lg">
-                  {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Shop"
-                      className="w-full h-full object-cover"
-                    />
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200 shadow-lg bg-white">
+                  {imagePreview && imagePreview !== '' ? (
+                    <>
+                      <img
+                        key={imagePreview}
+                        src={imagePreview}
+                        alt="Shop Profile"
+                        className="w-full h-full object-cover"
+                        onLoad={() => {
+                          console.log('✅ Profile modal image loaded successfully');
+                          console.log('Image URL:', imagePreview);
+                        }}
+                        onError={(e) => {
+                          console.error('❌ Profile modal image failed to load');
+                          console.error('Failed URL:', e.target.src);
+                          console.error('imagePreview value:', imagePreview);
+                          // Hide the broken image and show placeholder
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50" style={{ display: 'none' }}>
+                        <div className="w-12 h-12 bg-gray-200 rounded-full mb-2 flex items-center justify-center">
+                          <Camera size={20} className="text-gray-400" />
+                        </div>
+                        <div className="text-xs font-medium">Add Photo</div>
+                      </div>
+                    </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-[#1A6950] text-white">
-                      <Camera size={32} />
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full mb-2 flex items-center justify-center">
+                        <Camera size={20} className="text-gray-400" />
+                      </div>
+                      <div className="text-xs font-medium">Add Photo</div>
                     </div>
                   )}
                 </div>
                 
-                <label className="absolute bottom-0 right-0 bg-[#CDF546] p-2 rounded-full cursor-pointer hover:bg-[#b8e639] transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => e.target.files[0] && handleImageUpload(e.target.files[0])}
-                    className="hidden"
+                {/* Camera and Upload Options */}
+                <div className="absolute bottom-0 right-0 flex gap-1">
+                  {/* Camera Capture Button */}
+                  <button
+                    type="button"
+                    onClick={handleCameraCapture}
                     disabled={isUploading}
-                  />
-                  {isUploading ? (
-                    <Loader size={16} className="animate-spin text-gray-900" />
-                  ) : (
-                    <Upload size={16} className="text-gray-900" />
-                  )}
-                </label>
+                    className="bg-blue-600 p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors text-white shadow-lg"
+                    title="Take photo with camera"
+                  >
+                    {isUploading ? (
+                      <Loader size={16} className="animate-spin" />
+                    ) : (
+                      <Camera size={16} />
+                    )}
+                  </button>
+                  
+                  {/* File Upload Button */}
+                  <label className="bg-green-600 p-2 rounded-full cursor-pointer hover:bg-green-700 transition-colors shadow-lg">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => e.target.files[0] && handleImageUpload(e.target.files[0])}
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                    {isUploading ? (
+                      <Loader size={16} className="animate-spin text-white" />
+                    ) : (
+                      <Upload size={16} className="text-white" />
+                    )}
+                  </label>
+                </div>
               </div>
               <p className="text-sm text-gray-500 mt-2">
-                Upload your shop photo (Max 5MB)
+                Take a photo with camera or upload from gallery (Max 5MB)
               </p>
+              {/* Debug info */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-gray-400 mt-1 space-y-1">
+                  <p>Debug: {imagePreview ? `Image: ${imagePreview}` : 'No image preview'}</p>
+                  <p>shopImage: {shopImage || 'No shopImage'}</p>
+                </div>
+              )}
             </div>
 
             {/* Basic Information */}

@@ -6,9 +6,11 @@ import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './context/AuthContext';
 import { AppDataProvider } from './context/AppDataContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { ROLES } from './constants/roles';
 
 import LandingPage from './pages/LandingPage';
+import RoleSelection from './pages/RoleSelection';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import CustomerLogin from './pages/customer/CustomerLogin';
@@ -39,11 +41,13 @@ import ConditionalChatbot from './components/chat/ConditionalChatbot';
 
 function App() {
   return (
-    <AuthProvider>
-      <AppDataProvider>
-        <div className="app">
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppDataProvider>
+          <div className="app">
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/role-selection" element={<RoleSelection />} />
             
             {/* New Authentication Routes */}
             <Route path="/login" element={<Login />} />
@@ -95,7 +99,7 @@ function App() {
 
             {/* Protected Admin Routes */}
             <Route path="/admin" element={
-              <ProtectedRoute requiredRole={ROLES.ADMIN}>
+              <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
                 <AdminLayout />
               </ProtectedRoute>
             }>
@@ -124,6 +128,7 @@ function App() {
         </div>
       </AppDataProvider>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

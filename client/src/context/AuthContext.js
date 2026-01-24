@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROLES } from '../constants/roles';
 import { CONFIG, SOCKET_EVENTS } from '../constants/config';
 import apiClient from '../utils/api';
+import { authToasts } from '../utils/toast';
 import { io } from 'socket.io-client';
 
 export const AuthContext = createContext(null);
@@ -16,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   // Fetch current user from token
   const fetchCurrentUser = useCallback(async () => {
     const token = localStorage.getItem('vendorify_token');
+    
     if (!token) {
       setUser(null);
       setLoading(false);
@@ -23,26 +25,83 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
+      // First check if server is reachable and get server info
+      const healthResponse = await fetch(`${CONFIG.API.BASE_URL}/health`);
+      if (healthResponse.ok) {
+        const healthData = await healthResponse.json();
+        const lastKnownServerStart = localStorage.getItem('vendorify_server_start');
+        
+        // If server start time is different, server was restarted
+        if (lastKnownServerStart && lastKnownServerStart !== healthData.serverStartTime) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Server restart detected, clearing auth data');
+          }
+          clearAuthData();
+          setLoading(false);
+          return;
+        }
+        
+        // Store current server start time
+        localStorage.setItem('vendorify_server_start', healthData.serverStartTime);
+      }
+
+      // Test if the token is still valid by making an API call
       const response = await apiClient.getCurrentUser();
       if (response.success && response.user) {
         setUser(response.user);
         localStorage.setItem('vendorify_user', JSON.stringify(response.user));
+        
+        // Set session ID to maintain session only after successful validation
+        sessionStorage.setItem('vendorify_session_id', Date.now().toString());
       } else {
         // Invalid response, clear auth data
-        setUser(null);
-        apiClient.clearAuth();
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Invalid user response, clearing auth data');
+        }
+        clearAuthData();
       }
     } catch (error) {
       console.error('Fetch current user error:', error);
-      // Token is invalid, clear auth data
-      apiClient.clearAuth();
-      setUser(null);
+      // Token is invalid or expired, or server is not reachable
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Token validation failed or server unreachable, clearing auth data');
+      }
+      clearAuthData();
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Helper function to clear all auth data and cache
+  const clearAuthData = () => {
+    setUser(null);
+    localStorage.removeItem('vendorify_token');
+    localStorage.removeItem('vendorify_user');
+    localStorage.removeItem('vendorify_refresh_token');
+    localStorage.removeItem('vendorify_server_start');
+    sessionStorage.removeItem('vendorify_session_id');
+    // Clear any other vendorify-related data
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('vendorify_')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Clear browser cache for API requests
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          if (name.includes('vendorify') || name.includes('api')) {
+            caches.delete(name);
+          }
+        });
+      });
+    }
+  };
+
   useEffect(() => {
+    // Always try to fetch current user on app start
+    // Don't rely on sessionStorage for session validation
     fetchCurrentUser();
   }, [fetchCurrentUser]);
 
@@ -91,14 +150,11 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.user) {
         setUser(response.user);
         
-        // Navigate based on role
-        const redirectPath = 
-          response.user.role === ROLES.ADMIN ? '/admin' :
-          response.user.role === ROLES.VENDOR ? '/vendor' :
-          '/customer';
+        // Set session ID to maintain session
+        sessionStorage.setItem('vendorify_session_id', Date.now().toString());
         
-        navigate(redirectPath);
-        return { success: true };
+        // Return user data, let the component handle navigation
+        return { success: true, user: response.user };
       }
       
       return { success: false, message: response.message };
@@ -119,14 +175,11 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.user) {
         setUser(response.user);
         
-        // Navigate based on role
-        const redirectPath = 
-          response.user.role === ROLES.ADMIN ? '/admin' :
-          response.user.role === ROLES.VENDOR ? '/vendor' :
-          '/customer';
+        // Set session ID to maintain session
+        sessionStorage.setItem('vendorify_session_id', Date.now().toString());
         
-        navigate(redirectPath);
-        return { success: true };
+        // Navigate based on role - don't navigate here, let the component handle it
+        return { success: true, user: response.user };
       }
       
       return { success: false, message: response.message };
@@ -145,11 +198,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear user state immediately
-      setUser(null);
-      // Clear localStorage to ensure no stale data
-      localStorage.removeItem('vendorify_token');
-      localStorage.removeItem('vendorify_user');
+      // Clear all auth data
+      clearAuthData();
       // Disconnect socket
       if (socket) {
         socket.disconnect();
@@ -158,6 +208,16 @@ export const AuthProvider = ({ children }) => {
       // Navigate to home page
       navigate('/');
     }
+  };
+
+  // Force logout - clears everything without API call
+  const forceLogout = () => {
+    clearAuthData();
+    if (socket) {
+      socket.disconnect();
+      setSocket(null);
+    }
+    navigate('/');
   };
 
   // Update user function
@@ -173,7 +233,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Check if user is authenticated
-  const isAuthenticated = user && user.id;
+  const isAuthenticated = Boolean(user && user.id && !loading);
 
   return (
     <AuthContext.Provider
@@ -183,6 +243,7 @@ export const AuthProvider = ({ children }) => {
         register,
         login,
         logout,
+        forceLogout,
         updateUser,
         hasRole,
         isAuthenticated,

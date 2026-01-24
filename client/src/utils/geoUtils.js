@@ -44,11 +44,15 @@ const toRadians = (degrees) => {
  */
 export const filterVendorsWithinRadius = (vendors, userLocation, radiusKm = 2) => {
   if (!userLocation || !vendors.length) {
-    console.log('No user location or vendors for filtering');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('No user location or vendors for filtering');
+    }
     return [];
   }
   
-  console.log('Filtering vendors:', vendors.length, 'within', radiusKm, 'km of', userLocation);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Filtering vendors:', vendors.length, 'within', radiusKm, 'km of', userLocation);
+  }
   
   const filtered = vendors
     .map(vendor => {
@@ -73,7 +77,9 @@ export const filterVendorsWithinRadius = (vendors, userLocation, radiusKm = 2) =
         vendorLng = vendor.lng;
       } else {
         // Skip vendors without valid coordinates
-        console.warn('Vendor missing coordinates:', vendor.shopName, vendor);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Vendor missing coordinates:', vendor.shopName, vendor);
+        }
         return null;
       }
       
@@ -84,7 +90,9 @@ export const filterVendorsWithinRadius = (vendors, userLocation, radiusKm = 2) =
         vendorLng
       );
       
-      console.log(`Vendor ${vendor.shopName}: ${distance}km away`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Vendor ${vendor.shopName}: ${distance}km away`);
+      }
       
       return {
         ...vendor,
@@ -95,7 +103,9 @@ export const filterVendorsWithinRadius = (vendors, userLocation, radiusKm = 2) =
     .filter(vendor => vendor && vendor.distance <= radiusKm)
     .sort((a, b) => a.distance - b.distance);
     
-  console.log('Filtered result:', filtered.length, 'vendors within radius');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Filtered result:', filtered.length, 'vendors within radius');
+  }
   return filtered;
 };
 

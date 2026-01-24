@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Minus, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Clock, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,7 +8,7 @@ import { Footer } from '../../components/common/Footer';
 
 const CartPage = () => {
   const navigate = useNavigate();
-  const { cart, cartSummary, updateCartQty, placeOrder, vendors, getVendorById, generateWhatsAppOrderLink } = useAppData();
+  const { cart, cartSummary, updateCartQty, placeOrder, vendors, getVendorById, fetchVendorById, generateWhatsAppOrderLink } = useAppData();
   const [placing, setPlacing] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
   const [vendor, setVendor] = useState(null);
@@ -25,13 +25,13 @@ const CartPage = () => {
         return;
       }
       
-      const vendorData = await getVendorById(cartSummary.vendorId);
+      const vendorData = await fetchVendorById(cartSummary.vendorId);
       if (vendorData) {
         setVendor(vendorData);
       }
     };
     loadVendor();
-  }, [cartSummary.vendorId, vendors, getVendorById]);
+  }, [cartSummary.vendorId, vendors, fetchVendorById]);
 
   const canPlaceOrder = !vendor || vendor.isVerified;
 

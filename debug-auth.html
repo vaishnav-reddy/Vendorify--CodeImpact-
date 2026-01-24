@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .button { padding: 10px 15px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .button:hover { background: #005a87; }
+        .danger { background: #dc3545; }
+        .danger:hover { background: #c82333; }
+        .output { background: #f8f9fa; padding: 10px; border-radius: 3px; white-space: pre-wrap; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vendorify Auth Debug Tool</h1>
+        
+        <div class="section">
+            <h3>Current localStorage Contents</h3>
+            <button class="button" onclick="showLocalStorage()">Show localStorage</button>
+            <div id="localStorage-output" class="output"></div>
+        </div>
+        
+        <div class="section">
+            <h3>Test API Connection</h3>
+            <button class="button" onclick="testAPI()">Test API</button>
+            <div id="api-output" class="output"></div>
+        </div>
+        
+        <div class="section">
+            <h3>Test Token Validity</h3>
+            <button class="button" onclick="testToken()">Test Current Token</button>
+            <div id="token-output" class="output"></div>
+        </div>
+        
+        <div class="section">
+            <h3>Clear Data</h3>
+            <button class="button danger" onclick="clearVendorifyData()">Clear Vendorify Data</button>
+            <button class="button danger" onclick="clearAllData()">Clear All localStorage</button>
+            <div id="clear-output" class="output"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001/api';
+        
+        function showLocalStorage() {
+            const output = document.getElementById('localStorage-output');
+            let content = 'localStorage contents:\n\n';
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                content += `${key}: ${value}\n`;
+            }
+            
+            if (localStorage.length === 0) {
+                content += 'localStorage is empty\n';
+            }
+            
+            content += '\nVendorify specific items:\n';
+            content += `vendorify_token: ${localStorage.getItem('vendorify_token') || 'not found'}\n`;
+            content += `vendorify_user: ${localStorage.getItem('vendorify_user') || 'not found'}\n`;
+            
+            output.textContent = content;
+        }
+        
+        async function testAPI() {
+            const output = document.getElementById('api-output');
+            output.textContent = 'Testing API connection...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/public/vendors/nearby?lat=0&lng=0&radius=1000`);
+                const data = await response.json();
+                output.textContent = `API Connection: SUCCESS\nResponse: ${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                output.textContent = `API Connection: FAILED\nError: ${error.message}`;
+            }
+        }
+        
+        async function testToken() {
+            const output = document.getElementById('token-output');
+            const token = localStorage.getItem('vendorify_token');
+            
+            if (!token) {
+                output.textContent = 'No token found in localStorage';
+                return;
+            }
+            
+            output.textContent = 'Testing token validity...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    output.textContent = `Token: VALID\nUser: ${JSON.stringify(data.user, null, 2)}`;
+                } else {
+                    output.textContent = `Token: INVALID\nError: ${data.message}\nStatus: ${response.status}`;
+                }
+            } catch (error) {
+                output.textContent = `Token Test: FAILED\nError: ${error.message}`;
+            }
+        }
+        
+        function clearVendorifyData() {
+            const output = document.getElementById('clear-output');
+            const keysToRemove = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('vendorify_')) {
+                    keysToRemove.push(key);
+                }
+            }
+            
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            
+            output.textContent = `Cleared ${keysToRemove.length} Vendorify items:\n${keysToRemove.join('\n')}`;
+        }
+        
+        function clearAllData() {
+            const output = document.getElementById('clear-output');
+            const keyCount = localStorage.length;
+            localStorage.clear();
+            output.textContent = `Cleared all localStorage data (${keyCount} items)`;
+        }
+        
+        // Auto-load localStorage on page load
+        window.onload = function() {
+            showLocalStorage();
+        };
+    </script>
+</body>
+</html>

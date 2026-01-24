@@ -1,81 +1,111 @@
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROLES } from '../constants/roles';
 import Hero from '../components/Hero';
 import Navbar from '../components/common/Navbar';
 import CategoriesCarousel from '../components/CategoriesCarousel';
 import { Footer } from '../components/common/Footer';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 import { useAuth } from '../context/AuthContext';
+import { debugAuth, clearAllAuth } from '../utils/authDebug';
+import { navigateToDashboard } from '../utils/navigation';
+import usePerformanceMonitor from '../hooks/usePerformanceMonitor';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, loading } = useAuth();
-
-  const handleContinue = (role) => {
-    // For now, redirect to login page - users will select their role there
-    // In the future, we could pre-select the role or have separate flows
-    navigate('/login');
-  };
+  const { isAuthenticated, user, loading, forceLogout } = useAuth();
+  
+  // Monitor performance metrics
+  usePerformanceMonitor();
 
   const handleDashboardRedirect = () => {
-    if (user?.role === ROLES.VENDOR) navigate('/vendor');
-    else if (user?.role === ROLES.CUSTOMER) navigate('/customer');
-    else if (user?.role === ROLES.ADMIN) navigate('/admin');
+    navigateToDashboard(navigate, user);
   };
 
-  // Debug function to clear auth (you can remove this later)
-  const clearAuth = () => {
-    localStorage.removeItem('vendorify_token');
-    localStorage.removeItem('vendorify_user');
-    localStorage.removeItem('vendorify_customer');
-    localStorage.removeItem('vendorify_customer_orders');
-    window.location.reload();
+  const handleForceLogout = () => {
+    forceLogout();
   };
+
+  const handleTestToken = async () => {
+    await debugAuth();
+  };
+
+  // Auto-redirect authenticated users to their dashboard only if they explicitly navigate to landing page
+  // This prevents auto-redirect when server starts and user is already authenticated
+  React.useEffect(() => {
+    // Don't redirect on initial page load - only redirect if user navigates to landing page while authenticated
+    // Check if user came from another route (not direct page load)
+    const referrer = document.referrer;
+    const isDirectAccess = !referrer || referrer === window.location.href;
+    
+    if (!loading && isAuthenticated && user && user.id && !isDirectAccess) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Auto-redirecting authenticated user to dashboard');
+      }
+      handleDashboardRedirect();
+    }
+  }, [isAuthenticated, user, loading]);
+
+  // Debug: Log current auth state
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('LandingPage - Auth State:', {
+        isAuthenticated,
+        user: user ? { id: user.id, name: user.name, role: user.role } : null,
+        loading,
+        token: localStorage.getItem('vendorify_token') ? 'exists' : 'none',
+        storedUser: localStorage.getItem('vendorify_user') ? 'exists' : 'none',
+        sessionId: sessionStorage.getItem('vendorify_session_id') ? 'exists' : 'none'
+      });
+    }
+    
+    // Make debug functions available globally
+    window.debugAuth = debugAuth;
+    window.clearAllAuth = clearAllAuth;
+  }, [isAuthenticated, user, loading]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FDF9DC]">
+      <div className="min-h-screen flex items-center justify-center bg-[#FDF9DC] px-4">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#CDF546] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading...</p>
+          <div className="relative">
+            <div className="w-16 h-16 md:w-20 md:h-20 border-4 border-[#CDF546]/30 rounded-full animate-spin mx-auto mb-6"></div>
+            <div className="absolute inset-0 w-16 h-16 md:w-20 md:h-20 border-4 border-transparent border-t-[#CDF546] rounded-full animate-spin mx-auto"></div>
+          </div>
+          <p className="text-gray-600 font-medium text-base md:text-lg">Loading your experience...</p>
+          <p className="text-gray-400 text-sm mt-2">Connecting to local vendors</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is authenticated, show loading while redirecting
+  if (isAuthenticated && user && user.id) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FDF9DC] px-4">
+        <div className="text-center">
+          <div className="relative">
+            <div className="w-16 h-16 md:w-20 md:h-20 border-4 border-[#1A6950]/30 rounded-full animate-spin mx-auto mb-6"></div>
+            <div className="absolute inset-0 w-16 h-16 md:w-20 md:h-20 border-4 border-transparent border-t-[#1A6950] rounded-full animate-spin mx-auto"></div>
+          </div>
+          <p className="text-gray-600 font-medium text-base md:text-lg">Redirecting to your dashboard...</p>
+          <p className="text-gray-400 text-sm mt-2">Welcome back, {user.name}!</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
-      <div id="hero">
-        {isAuthenticated ? (
-          <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#FDF9DC] px-6 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">Welcome Back, {user?.name}!</h1>
-            <p className="text-xl text-gray-600 mb-8">You are already logged in.</p>
-            <div className="flex gap-4">
-              <button
-                onClick={handleDashboardRedirect}
-                className="bg-[#1A6950] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#145a44] transition-all"
-              >
-                Go to Dashboard
-              </button>
-              <button
-                onClick={clearAuth}
-                className="bg-red-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-red-700 transition-all"
-              >
-                Logout & Reset
-              </button>
-            </div>
-          </div>
-        ) : (
-          <Hero
-            onContinueCustomer={() => handleContinue(ROLES.CUSTOMER)}
-            onContinueVendor={() => handleContinue(ROLES.VENDOR)}
-          />
-        )}
+    <ErrorBoundary>
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <div id="hero">
+          <Hero />
+        </div>
+        <CategoriesCarousel />
+        <Footer />
       </div>
-      <CategoriesCarousel />
-      <Footer />
-    </div>
+    </ErrorBoundary>
   );
 };
 

@@ -6,13 +6,15 @@ import { MapPin, AlertCircle } from 'lucide-react';
 import { formatDistance } from '../../utils/geoUtils';
 import LoadingSpinner from '../common/LoadingSpinner';
 
-// Fix for default markers
+// Fix for default markers - CRITICAL for Leaflet to work properly
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
+
+console.log('🗺️ LeafletMap component loaded, Leaflet version:', L.version);
 
 const LeafletMap = ({ 
   vendors = [], 
@@ -235,6 +237,18 @@ const LeafletMap = ({
   useEffect(() => {
     if (!mapInstanceRef.current || !mapReady) return;
 
+    console.log('🗺️ Updating vendor markers:', {
+      vendorsCount: vendors.length,
+      mapReady,
+      vendors: vendors.map(v => ({
+        id: v._id,
+        name: v.shopName,
+        coordinates: v.coordinates,
+        hasLocation: !!v.location,
+        locationCoords: v.location?.coordinates
+      }))
+    });
+
     // Clear existing markers
     markersRef.current.forEach(marker => {
       try {
@@ -246,6 +260,7 @@ const LeafletMap = ({
     markersRef.current = [];
 
     if (!vendors.length) {
+      console.log('🗺️ No vendors to display on map');
       return;
     }
 
@@ -253,9 +268,20 @@ const LeafletMap = ({
     vendors.forEach((vendor, index) => {
       
       if (!vendor.coordinates) {
-        console.warn('Vendor has no coordinates:', vendor.shopName);
+        console.warn('🗺️ Vendor has no coordinates:', {
+          name: vendor.shopName,
+          id: vendor._id,
+          location: vendor.location,
+          coordinates: vendor.coordinates
+        });
         return;
       }
+
+      console.log('🗺️ Adding marker for vendor:', {
+        name: vendor.shopName,
+        coordinates: vendor.coordinates,
+        category: vendor.category
+      });
 
       try {
         // Create custom vendor icon
@@ -294,6 +320,8 @@ const LeafletMap = ({
         const marker = L.marker([vendor.coordinates.lat, vendor.coordinates.lng], { 
           icon: vendorIcon 
         }).addTo(mapInstanceRef.current);
+
+        console.log('✅ Marker added successfully for:', vendor.shopName);
 
         // Create popup content
         const popupContent = `
@@ -346,9 +374,11 @@ const LeafletMap = ({
 
         markersRef.current.push(marker);
       } catch (markerError) {
-        console.warn('Error adding vendor marker:', markerError);
+        console.warn('❌ Error adding vendor marker:', markerError, vendor);
       }
     });
+
+    console.log('🗺️ Total markers added:', markersRef.current.length);
 
     // Global function for popup interactions
     window.handleVendorView = (vendorId) => {

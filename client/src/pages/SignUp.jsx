@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft, User, Store, Shield, Mail, Lock, UserIcon, Phone, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ROLES } from '../constants/roles';
+import { navigateToDashboard } from '../utils/navigation';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -63,7 +64,7 @@ const SignUp = () => {
     }
 
     // Mobile validation (optional but if provided, should be valid)
-    if (formData.mobile && !/^\+?[\d\s\-()]{10,}$/.test(formData.mobile)) {
+    if (formData.mobile && !/^\+?[\d\s\-\(\)]{10,}$/.test(formData.mobile)) {
       newErrors.mobile = 'Please enter a valid mobile number';
     }
 
@@ -106,7 +107,10 @@ const SignUp = () => {
 
       const result = await register(userData);
 
-      if (!result.success) {
+      if (result.success && result.user) {
+        // Navigate to appropriate dashboard
+        navigateToDashboard(navigate, result.user);
+      } else {
         setErrors({ submit: result.message });
       }
     } catch (error) {

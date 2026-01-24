@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Lock, Phone, ShieldCheck, Shield, ShoppingBag, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Lock, Phone, ShoppingBag, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { navigateToDashboard } from '../../utils/navigation';
 
 const VendorLogin = () => {
-  const { login } = useAuth();
-  const [form, setForm] = useState({ mobile: '', password: '', aadhaar: '' });
+  const { login, isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ mobile: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showAadhaar, setShowAadhaar] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect authenticated users to their dashboard
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('User already authenticated, redirecting to dashboard');
+      }
+      navigateToDashboard(navigate, user);
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const validateMobile = (mobile) => /^[6-9]\d{9}$/.test(mobile);
 
@@ -35,11 +46,24 @@ const VendorLogin = () => {
     setError('');
     try {
       const result = await login({ mobile: form.mobile, password: form.password, role: 'vendor' });
-      if (!result.success) {
+      if (result.success) {
+        // Navigate to vendor dashboard after successful login
+        if (result.user) {
+          // Add a small delay to ensure any success messages are visible
+          setTimeout(() => {
+            navigateToDashboard(navigate, result.user);
+          }, 500);
+        } else {
+          console.warn('Login successful but no user data received');
+          // Fallback navigation
+          navigate('/vendor');
+        }
+      } else {
         setError(result.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
-      setError('Login failed. Please check your credentials.');
+      console.error('Vendor login error:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -125,40 +149,6 @@ const VendorLogin = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setShowAadhaar(!showAadhaar)}
-                className="flex items-center gap-2 text-[11px] font-black text-[#1A6950] uppercase tracking-widest hover:underline ml-4 focus:outline-none focus:ring-2 focus:ring-[#CDF546] rounded"
-              >
-                <Shield size={14} />
-                {showAadhaar ? 'Hide' : 'Add'} Aadhaar Verification
-              </button>
-
-              {showAadhaar && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="mt-4 space-y-2"
-                >
-                  <div className="relative group">
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1A6950] transition-colors">
-                      <ShieldCheck size={20} />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Enter 12-digit Aadhaar"
-                      maxLength={12}
-                      className="w-full bg-gray-50/50 border-2 border-transparent pl-16 pr-6 py-5 rounded-[24px] text-gray-900 font-bold placeholder:text-gray-300 focus:bg-white focus:border-[#CDF546] focus:ring-0 transition-all outline-none"
-                      value={form.aadhaar}
-                      onChange={(e) => setForm({ ...form, aadhaar: e.target.value.replace(/\D/g, '') })}
-                      aria-label="Aadhaar number"
-                    />
-                  </div>
-                </motion.div>
-              )}
             </div>
 
             {error && (

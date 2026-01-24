@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft, User, Store, Shield, Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ROLES } from '../constants/roles';
+import { navigateToDashboard } from '../utils/navigation';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -72,7 +73,10 @@ const Login = () => {
         password: formData.password
       });
 
-      if (!result.success) {
+      if (result.success && result.user) {
+        // Navigate to appropriate dashboard
+        navigateToDashboard(navigate, result.user);
+      } else {
         setErrors({ submit: result.message });
       }
     } catch (error) {

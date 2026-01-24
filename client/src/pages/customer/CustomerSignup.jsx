@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, Phone, User, Mail, ShoppingBag, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
+import { navigateToDashboard } from '../../utils/navigation';
 
 const CustomerSignup = () => {
-  const { register } = useAuth();
+  const { register, isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ 
     name: '', 
     mobile: '', 
@@ -19,6 +21,16 @@ const CustomerSignup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [useMobile, setUseMobile] = useState(true);
+
+  // Redirect authenticated users to their dashboard
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('User already authenticated, redirecting to dashboard');
+      }
+      navigateToDashboard(navigate, user);
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const validateMobile = (mobile) => {
     const mobileRegex = /^[6-9]\d{9}$/;
@@ -88,11 +100,23 @@ const CustomerSignup = () => {
 
       if (result.success) {
         toast.success('Account created successfully!');
+        // Navigate to customer dashboard after successful registration
+        if (result.user) {
+          // Add a small delay to ensure toast is visible
+          setTimeout(() => {
+            navigateToDashboard(navigate, result.user);
+          }, 1000);
+        } else {
+          console.warn('Registration successful but no user data received');
+          // Fallback navigation
+          navigate('/customer');
+        }
       } else {
         setError(result.message || 'Registration failed');
       }
     } catch (err) {
-      setError('Registration failed. Please try again.');
+      console.error('Customer registration error:', err);
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

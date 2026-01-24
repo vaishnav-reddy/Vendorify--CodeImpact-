@@ -29,7 +29,7 @@ export const CONFIG = {
     NAME_MIN_LENGTH: 2,
     NAME_MAX_LENGTH: 50,
     DESCRIPTION_MAX_LENGTH: 500,
-    PHONE_REGEX: /^[+]?[1-9][\d]{0,15}$/
+    PHONE_REGEX: /^[\+]?[1-9][\d]{0,15}$/
   },
   
   FILE_UPLOAD: {

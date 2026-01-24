@@ -49,49 +49,79 @@ const VendorDashboard = () => {
     address: 'Location not set'
   });
 
-  // Fetch dashboard stats
-  const fetchDashboardStats = useCallback(async () => {
+  // Fetch dashboard stats with force refresh option
+  const fetchDashboardStats = useCallback(async (forceRefresh = false) => {
     try {
+      console.log('🔄 Fetching dashboard stats...', forceRefresh ? '(Force refresh)' : '');
+      
       const [statsResponse, profileResponse] = await Promise.all([
         apiClient.getVendorStats(),
         apiClient.getVendorProfile()
       ]);
       
       if (statsResponse.success) {
-        setDashboardStats(statsResponse.stats);
+        setDashboardStats(prev => ({
+          ...prev,
+          ...statsResponse.stats
+        }));
         setIsOnline(statsResponse.stats.isOnline);
       }
       
-      // FIXED: Get vendor profile for complete data including image
-      if (profileResponse) {
-        setDashboardStats(prev => ({
-          ...prev,
+      // Update with vendor profile data
+      if (profileResponse && profileResponse.success !== false) {
+        console.log('📊 Raw profile response:', profileResponse);
+        
+        const newStats = {
           shopImage: profileResponse.image,
-          shopName: profileResponse.shopName || prev.shopName,
-          ownerName: profileResponse.ownerName || prev.ownerName,
-          address: profileResponse.address || prev.address,
+          shopName: profileResponse.shopName || 'My Shop',
+          ownerName: profileResponse.ownerName || 'Owner',
+          address: profileResponse.address || 'Location not set',
           phone: profileResponse.phone || '',
           email: profileResponse.email || '',
           category: profileResponse.category || 'food',
           services: profileResponse.services || [],
           schedule: profileResponse.schedule || { operatingHours: '10:00 AM - 9:00 PM' }
+        };
+        
+        console.log('🖼️ Setting dashboard image to:', profileResponse.image);
+        console.log('🔗 Full image URL will be:', apiClient.getImageUrl(profileResponse.image));
+        
+        setDashboardStats(prev => ({
+          ...prev,
+          ...newStats
         }));
+      } else {
+        console.log('❌ No valid profile response received');
       }
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
+      // Set default values if API fails
+      setDashboardStats(prev => ({
+        ...prev,
+        shopName: user?.name ? `${user.name}'s Shop` : 'My Shop',
+        ownerName: user?.name || 'Owner',
+        address: 'Location not set'
+      }));
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (user && user.role === 'vendor') {
+      console.log('🔄 Dashboard mounting for vendor:', user.id);
       fetchVendorData(user.id);
       fetchDashboardStats();
+      
+      // Also force refresh after a short delay to ensure data is loaded
+      setTimeout(() => {
+        console.log('🔄 Force refreshing dashboard data...');
+        fetchDashboardStats(true);
+      }, 2000);
     }
   }, [user, fetchVendorData, fetchDashboardStats]);
 
-  const orders = typeof getOrdersForVendor === 'function' ? getOrdersForVendor(user?.id || user?._id) : [];
-  const completedOrders = orders.filter(o => o.status === 'COMPLETED');
-  const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
+  const orders = typeof getOrdersForVendor === 'function' ? (getOrdersForVendor(user?.id || user?._id) || []) : [];
+  const completedOrders = (orders || []).filter(o => o.status === 'COMPLETED');
+  const totalEarnings = (completedOrders || []).reduce((sum, o) => sum + (o.total || 0), 0);
 
   const handleAddProduct = useCallback(async (newProduct) => {
     const result = await addProduct(newProduct);
@@ -133,7 +163,7 @@ const VendorDashboard = () => {
     }
   };
 
-  // Handle shop photo upload
+  // Handle shop photo upload and refresh dashboard
   const handleShopPhotoUpload = async (file) => {
     try {
       const formData = new FormData();
@@ -143,7 +173,18 @@ const VendorDashboard = () => {
       
       if (response.success) {
         toast.success('Shop photo updated successfully');
-        fetchDashboardStats(); // Refresh to get updated image
+        
+        // Update the dashboard stats immediately with the new image
+        const imageUrl = response.imageUrl;
+        setDashboardStats(prev => ({
+          ...prev,
+          shopImage: imageUrl
+        }));
+        
+        // Also refresh dashboard stats to get any other updates
+        fetchDashboardStats();
+      } else {
+        toast.error(response.message || 'Failed to upload shop photo');
       }
     } catch (error) {
       console.error('Failed to upload shop photo:', error);
@@ -182,27 +223,39 @@ const VendorDashboard = () => {
               animate={{ scale: 1, rotate: 0 }}
               className="relative"
             >
-              <div className="w-24 h-24 bg-[#1A6950] rounded-[32px] flex items-center justify-center shadow-2xl relative z-10 overflow-hidden">
-                {dashboardStats.shopImage ? (
-                  <img 
-                    src={dashboardStats.shopImage.startsWith('http') 
-                      ? dashboardStats.shopImage 
-                      : `${window.location.origin}${dashboardStats.shopImage}`
-                    } 
-                    alt="Shop" 
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                {!dashboardStats.shopImage && (
-                  <Store size={40} className="text-[#CDF546]" />
+              <div className="w-24 h-24 rounded-[32px] shadow-2xl relative z-10 overflow-hidden border-2 border-gray-300 bg-white">
+                {dashboardStats.shopImage && dashboardStats.shopImage !== '' ? (
+                  <>
+                    <img 
+                      src={apiClient.getImageUrl(dashboardStats.shopImage)} 
+                      alt="Shop Profile" 
+                      className="w-full h-full object-cover"
+                      onLoad={() => {
+                        console.log('✅ Dashboard image loaded successfully');
+                        console.log('Image URL:', apiClient.getImageUrl(dashboardStats.shopImage));
+                      }}
+                      onError={(e) => {
+                        console.log('❌ Dashboard image failed to load');
+                        console.log('Failed URL:', e.target.src);
+                        console.log('shopImage value:', dashboardStats.shopImage);
+                        // Hide the broken image and show placeholder
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400" style={{ display: 'none' }}>
+                      <div className="w-8 h-8 bg-gray-300 rounded mb-1"></div>
+                      <div className="text-xs font-medium">Photo</div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400">
+                    <div className="w-8 h-8 bg-gray-300 rounded mb-1"></div>
+                    <div className="text-xs font-medium">Photo</div>
+                  </div>
                 )}
-                <Store size={40} className="text-[#CDF546]" style={{ display: 'none' }} />
               </div>
-              <div className="absolute inset-0 bg-[#CDF546] rounded-[32px] blur-2xl opacity-40 animate-pulse" />
+              <div className="absolute inset-0 bg-gray-300 rounded-[32px] blur-2xl opacity-20 animate-pulse" />
               <button
                 onClick={() => setShowEditProfile(true)}
                 className="absolute -bottom-2 -right-2 z-20 bg-white p-2 rounded-full shadow-lg text-gray-900 border border-gray-100 hover:scale-110 transition-transform"
@@ -307,7 +360,7 @@ const VendorDashboard = () => {
                 <div>
                   <h2 className="text-2xl font-heading font-black text-gray-900 uppercase tracking-tight">Shop Menu</h2>
                   <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">
-                    {products.length} Items • Manage availability
+                    {(products || []).length} Items • Manage availability
                   </p>
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
@@ -330,7 +383,7 @@ const VendorDashboard = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <AnimatePresence>
-                  {products.map((item) => (
+                  {(products || []).map((item) => (
                     <motion.div
                       layout
                       key={item._id || item.id}
@@ -372,7 +425,7 @@ const VendorDashboard = () => {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                {products.length === 0 && (
+                {(products || []).length === 0 && (
                   <div className="col-span-2 text-center py-10 opacity-30 italic">
                     No products added yet.
                   </div>
@@ -394,7 +447,7 @@ const VendorDashboard = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                {orders.length > 0 ? orders.slice(0, 4).map((order) => (
+                {(orders || []).length > 0 ? (orders || []).slice(0, 4).map((order) => (
                   <div key={order._id || order.id} className="bg-white/5 backdrop-blur-xl rounded-[40px] p-8 border border-white/10 hover:border-[#CDF546]/50 transition-all group">
                     <div className="flex justify-between items-start mb-6">
                       <div className="space-y-1">
@@ -507,7 +560,7 @@ const VendorDashboard = () => {
         <AddProductModal
           isOpen={showAddProduct}
           onClose={() => setShowAddProduct(false)}
-          onAdd={handleAddProduct}
+          onSave={handleAddProduct}
         />
       )}
 
@@ -515,10 +568,26 @@ const VendorDashboard = () => {
         <ShopDetailsModal
           isOpen={showEditProfile}
           onClose={() => setShowEditProfile(false)}
-          initialData={dashboardStats} // FIXED: Use correct prop name
+          initialData={dashboardStats}
           onSave={(updatedData) => {
+            console.log('📥 Received updated data from modal:', updatedData);
+            
+            // Update dashboard stats immediately with new data
+            setDashboardStats(prev => ({
+              ...prev,
+              ...updatedData,
+              shopImage: updatedData.image || prev.shopImage
+            }));
+            
+            // Also call the updateVendorDetails function
             updateVendorDetails(updatedData);
-            fetchDashboardStats(); // ADDED: Refresh data after update
+            
+            // Force refresh dashboard data after a short delay
+            setTimeout(() => {
+              console.log('🔄 Force refreshing dashboard after profile save...');
+              fetchDashboardStats(true);
+            }, 1000);
+            
             setShowEditProfile(false);
           }}
         />

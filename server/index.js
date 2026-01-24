@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 require('dotenv').config();
 
 const { CONFIG, SOCKET_EVENTS, HTTP_STATUS } = require('./config/constants');
@@ -25,6 +26,7 @@ const io = new Server(server, {
 });
 
 const PORT = CONFIG.SERVER.PORT;
+const serverStartTime = new Date().toISOString(); // Track server start time
 
 // Security & Performance Middleware
 app.use(helmet());
@@ -50,8 +52,13 @@ app.use('/api', limiter);
 app.use(express.json({ limit: process.env.MAX_FILE_SIZE || '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: process.env.MAX_FILE_SIZE || '10mb' }));
 
-// Serve static files for uploaded images
-app.use('/uploads', express.static('uploads'));
+// Serve static files for uploaded images - SIMPLE APPROACH
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    setHeaders: (res, path) => {
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Cache-Control', 'public, max-age=31536000');
+    }
+}));
 
 // Socket.io middleware
 app.use((req, res, next) => {
@@ -118,12 +125,32 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
         database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        serverStartTime: serverStartTime, // Add server start time
         uploads: {
             uploadsDir: fs.existsSync(uploadsDir),
             shopsDir: fs.existsSync(shopsDir),
             shopFiles: fs.existsSync(shopsDir) ? fs.readdirSync(shopsDir).length : 0
         }
     });
+});
+
+// Debug endpoint to check vendor data
+app.get('/api/debug/vendor/:userId', async (req, res) => {
+    try {
+        const Vendor = require('./models/Vendor');
+        const vendor = await Vendor.findOne({ userId: req.params.userId });
+        res.json({
+            success: true,
+            vendor: vendor,
+            hasImage: !!vendor?.image,
+            imageUrl: vendor?.image
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
 });
 
 // Root endpoint

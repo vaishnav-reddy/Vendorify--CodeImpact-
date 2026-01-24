@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, ChevronDown, ArrowRight, Bell, LogOut } from "lucide-react";
+import {
+  Menu,
+  X,
+  ChevronDown,
+  ArrowRight,
+  Bell,
+  LogOut,
+  User,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 
@@ -12,12 +20,11 @@ export default function Navbar({ role = "landing" }) {
 
   const handleLogout = async () => {
     await logout();
+    navigate("/");
   };
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -25,12 +32,12 @@ export default function Navbar({ role = "landing" }) {
   const scrollToSection = (id) => {
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    } else if (role !== 'landing') {
-      navigate('/');
+      element.scrollIntoView({ behavior: "smooth" });
+    } else if (role !== "landing") {
+      navigate("/");
       setTimeout(() => {
         const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        if (el) el.scrollIntoView({ behavior: "smooth" });
       }, 100);
     }
     setIsOpen(false);
@@ -38,119 +45,112 @@ export default function Navbar({ role = "landing" }) {
 
   const navLinks = {
     landing: [
-      { name: 'Categories', action: () => scrollToSection('categories') },
-      { name: 'How it Works', action: () => scrollToSection('how-it-works') },
+      { name: "Categories", action: () => scrollToSection("categories") },
+      { name: "How it Works", action: () => scrollToSection("how-it-works") },
     ],
     customer: [
-      { name: 'Dashboard', to: '/customer' },
-      { name: 'Orders', to: '/customer/orders' },
-      { name: 'Cart', to: '/customer/cart' },
+      { name: "Dashboard", to: "/customer" },
+      { name: "Orders", to: "/customer/orders" },
+      { name: "Cart", to: "/customer/cart" },
     ],
     vendor: [
-      { name: 'Stats', to: '/vendor' },
-      { name: 'Orders', to: '/vendor/orders' },
-      { name: 'Shop Menu', to: '/vendor' },
-    ]
+      { name: "Stats", to: "/vendor" },
+      { name: "Orders", to: "/vendor/orders" },
+      { name: "Shop Menu", to: "/vendor" },
+    ],
   };
 
   const currentLinks = navLinks[role] || navLinks.landing;
 
   return (
-    <nav className="fixed top-2 z-50 w-full flex justify-center px-4 md:px-0 transition-all duration-300">
-        <div className={`bg-white/95 backdrop-blur-xl px-4 md:px-8 lg:px-12 py-4 flex items-center justify-between gap-4 w-full max-w-7xl rounded-b-3xl shadow-lg border border-gray-100 ${
-          isScrolled ? 'ring-1 ring-gray-200/50 scale-[1.02]' : ''
-        }`}>
-        
-          {/* Logo - Left on desktop */}
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Vendorify Home">
-            <img 
-              src="/logo.svg" 
-              alt="Vendorify Logo" 
-              className="w-12 h-12 md:w-14 md:h-14 object-contain"
-            />
-            <span className="text-xl md:text-2xl font-black text-gray-900 tracking-tight uppercase hidden sm:block">Vendorify</span>
-          </Link>
+    <nav className="fixed top-2 z-50 w-full flex justify-center px-4 transition-all duration-300">
+      <div
+        className={`bg-white/95 backdrop-blur-xl px-6 py-4 flex items-center justify-between w-full max-w-7xl rounded-3xl shadow-lg border ${
+          isScrolled ? "ring-1 ring-gray-200/50 scale-[1.02]" : ""
+        }`}
+      >
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2">
+          <img src="/logo.svg" alt="Vendorify" className="w-12 h-12 md:w-14 md:h-14" />
+          <span className="hidden sm:block text-xl font-black uppercase">
+            Vendorify
+          </span>
+        </Link>
 
-          {/* Center Links */}
-          <div className="hidden lg:flex items-center gap-6">
-            {role === 'landing' && (
-              <div className="relative group">
-                <button 
-                  className="flex items-center gap-1.5 text-gray-800 hover:text-emerald-700 transition-all font-bold text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-[#CDF546] rounded px-2 py-1"
-                  aria-haspopup="true"
-                  aria-label="Products menu"
+        {/* Desktop Links */}
+        <div className="hidden lg:flex items-center gap-6">
+          {role === "landing" && (
+            <div className="relative group">
+              <button className="flex items-center gap-1 text-xs font-bold uppercase hover:text-[#1A6950] transition-colors">
+                Products
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              <div className="absolute hidden group-hover:block bg-white rounded-xl shadow-xl mt-2 w-56 border border-gray-100">
+                <button
+                  onClick={() => scrollToSection("categories")}
+                  className="block w-full px-6 py-3 text-left hover:bg-yellow-50 transition-colors"
                 >
-                  Products
-                  <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-emerald-700 transition-colors" />
+                  Categories
                 </button>
-                <div className="absolute left-0 top-full mt-2 hidden group-hover:block bg-white/95 backdrop-blur-xl border border-gray-100 rounded-2xl shadow-2xl py-4 w-56 z-50">
-                  <button onClick={() => scrollToSection('categories')} className="block w-full text-left px-6 py-3 hover:bg-yellow-50 text-gray-800 text-xs font-bold uppercase tracking-wider transition-colors">
-                    Categories
-                  </button>
-                  <button onClick={() => scrollToSection('how-it-works')} className="block w-full text-left px-6 py-3 hover:bg-yellow-50 text-gray-800 text-xs font-bold uppercase tracking-wider transition-colors">
-                    How it Works
-                  </button>
-                </div>
+                <button
+                  onClick={() => scrollToSection("how-it-works")}
+                  className="block w-full px-6 py-3 text-left hover:bg-yellow-50 transition-colors"
+                >
+                  How it Works
+                </button>
               </div>
-            )}
-            {currentLinks.map((link, idx) => (
-              <div key={idx}>
-                {link.action ? (
-                  <button 
-                    onClick={link.action}
-                    className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-[#CDF546] rounded px-2 py-1"
-                  >
-                    {link.name}
-                  </button>
-                ) : (
-                  <Link 
-                    to={link.to} 
-                    className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-[#CDF546] rounded px-2 py-1"
-                  >
-                    {link.name}
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
+            </div>
+          )}
+          {currentLinks.map((link, i) =>
+            link.action ? (
+              <button key={i} onClick={link.action} className="nav-link">
+                {link.name}
+              </button>
+            ) : (
+              <Link key={i} to={link.to} className="nav-link">
+                {link.name}
+              </Link>
+            )
+          )}
+        </div>
 
         {/* Right Actions */}
-        <div className="hidden md:flex items-center gap-4 lg:gap-6 flex-shrink-0">
-            {role === 'landing' ? (
-              <>
-                <button 
-                  onClick={() => navigate('/login')}
-                  className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-sm uppercase tracking-wider"
-                >
-                  Login
-                </button>
-                <button 
-                  onClick={() => navigate('/signup')}
-                  className="bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-8 py-3 rounded-full font-bold text-sm flex items-center gap-2 uppercase tracking-wider shadow-lg hover:shadow-xl transition-all"
-                >
-                  Sign Up
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </>
-            ) : (
-            <div className="flex items-center gap-4">
-              <button className="p-2.5 text-gray-400 hover:text-emerald-700 hover:bg-gray-100 rounded-lg transition-all">
+        <div className="hidden md:flex items-center gap-4">
+          {role === "landing" ? (
+            <>
+              <button
+                onClick={() => navigate("/role-selection")}
+                className="bg-[#1A6950] hover:bg-[#145a44] active:scale-[0.98] px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-white"
+              >
+                Get Started Now <ArrowRight size={16} className="text-[#CDF546]" />
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="icon-btn" aria-label="Notifications">
                 <Bell size={20} />
               </button>
-                <button 
-                  onClick={handleLogout}
-                  className="bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
-                >
-                  Log Out
-                  <LogOut size={16} className="text-[#CDF546]" />
-                </button>
-            </div>
+              <button
+                onClick={() => navigate(`/${role}/profile`)}
+                className="icon-btn"
+                aria-label="Profile"
+              >
+                <User size={20} />
+              </button>
+              <button onClick={handleLogout} className="logout-btn">
+                Log Out <LogOut size={16} />
+              </button>
+            </>
           )}
         </div>
 
         {/* Mobile Toggle */}
-        <button onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2">
-          {isOpen ? <X className="h-6 w-6 text-gray-900" /> : <Menu className="h-6 w-6 text-gray-900" />}
+        <button 
+          onClick={() => setIsOpen(!isOpen)} 
+          className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          aria-label={isOpen ? "Close menu" : "Open menu"}
+        >
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
@@ -161,50 +161,60 @@ export default function Navbar({ role = "landing" }) {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="md:hidden absolute top-[calc(100%+12px)] left-4 right-4 bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-gray-100 flex flex-col gap-6 z-50"
+            className="md:hidden absolute top-[calc(100%+12px)] left-4 right-4 bg-white rounded-3xl shadow-2xl p-6 border border-gray-100"
           >
-            {currentLinks.map((link, idx) => (
-              <div key={idx}>
-                {link.action ? (
-                  <button 
-                    onClick={link.action}
-                    className="text-gray-900 font-bold text-lg uppercase tracking-wider py-3 text-left hover:bg-yellow-50 px-4 rounded-xl transition-colors"
-                  >
-                    {link.name}
-                  </button>
-                ) : (
-                  <Link 
-                    to={link.to} 
-                    onClick={() => setIsOpen(false)}
-                    className="text-gray-900 font-bold text-lg uppercase tracking-wider py-3 block hover:bg-yellow-50 px-4 rounded-xl transition-colors"
-                  >
-                    {link.name}
-                  </Link>
-                )}
-              </div>
-            ))}
-            <hr className="border-gray-100" />
-            {role === 'landing' ? (
-              <>
-                <Link to="/login" onClick={() => setIsOpen(false)} className="text-gray-900 font-bold text-lg uppercase tracking-wider py-3 hover:bg-yellow-50 px-4 rounded-xl">
-                  Login
-                </Link>
-                <button 
-                  onClick={() => { navigate('/signup'); setIsOpen(false); }}
-                  className="bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-8 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-wider shadow-xl hover:shadow-2xl transition-all mx-auto"
+            {currentLinks.map((link, i) =>
+              link.action ? (
+                <button
+                  key={i}
+                  onClick={link.action}
+                  className="mobile-link"
                 >
-                  Sign Up
-                  <ArrowRight className="h-5 w-5" />
+                  {link.name}
+                </button>
+              ) : (
+                <Link
+                  key={i}
+                  to={link.to}
+                  onClick={() => setIsOpen(false)}
+                  className="mobile-link"
+                >
+                  {link.name}
+                </Link>
+              )
+            )}
+            <hr className="my-4 border-gray-100" />
+            {role === "landing" ? (
+              <>
+                <button
+                  onClick={() => {
+                    navigate("/role-selection");
+                    setIsOpen(false);
+                  }}
+                  className="signup-mobile"
+                >
+                  Get Started Now <ArrowRight size={16} />
                 </button>
               </>
             ) : (
-              <button 
-                onClick={() => { handleLogout(); setIsOpen(false); }}
-                className="bg-gray-900 hover:bg-black text-white px-8 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-wider shadow-xl hover:shadow-2xl transition-all mx-auto"
-              >
-                Log Out
-                <LogOut className="h-5 w-5 text-[#CDF546]" />
-              </button>
+              <>
+                <Link
+                  to={`/${role}/profile`}
+                  className="mobile-link flex items-center gap-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <User size={18} /> Profile
+                </Link>
+                <button 
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }} 
+                  className="logout-mobile"
+                >
+                  Log Out <LogOut size={16} />
+                </button>
+              </>
             )}
           </motion.div>
         )}
