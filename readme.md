@@ -74,7 +74,7 @@
 ##  Demo & Screenshots
 
 ### Landing Page
-!![Landing Page](image-12.png)
+![Landing Page](image-12.png)
 *Modern landing page with bilingual support and clear call-to-actions*
 
 ### Customer Dashboard
