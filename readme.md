@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[Vendorify Logo](image-11.png)
+![Vendorify Logo](image-11.png)
 
 **गली गली के ठेले वाले आपको यहाँ मिलेंगे**  
 *Desi Products, World-Class Quality, Street Prices*
