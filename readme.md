@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Vendorify Logo](image-11.png)
+[Vendorify Logo](image-11.png)
 
 **गली गली के ठेले वाले आपको यहाँ मिलेंगे**  
 *Desi Products, World-Class Quality, Street Prices*
@@ -736,8 +736,5 @@ This project is licensed under the **MIT License** -
 
 <div align="center">
 
-**Made with by the Vendorify Team**
-
-[ Back to Top](#-vendorify---street-vendor-marketplace)
 
 </div>
