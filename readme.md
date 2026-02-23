@@ -12,7 +12,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-5+-47A248?style=for-the-badge&logo=mongodb)](https://mongodb.com/)
 [![Socket.io](https://img.shields.io/badge/Socket.io-4.8.3-010101?style=for-the-badge&logo=socket.io)](https://socket.io/)
 
-[🚀 Live Demo](#) • [📖 Documentation](#) • [🐛 Report Bug](#) • [💡 Request Feature](#)
+[ Live Demo](#) • [Documentation](#) • [ Report Bug](#) • [Request Feature](#)
 
 </div>
 
@@ -20,111 +20,111 @@
 
 ## 📋 Table of Contents
 
-- [🌟 Features](#-features)
-- [🎯 Demo & Screenshots](#-demo--screenshots)
-- [🛠️ Tech Stack](#️-tech-stack)
-- [⚡ Quick Start](#-quick-start)
-- [📁 Project Structure](#-project-structure)
-- [🔌 API Documentation](#-api-documentation)
-- [🎨 UI Components](#-ui-components)
-- [🔐 Authentication](#-authentication)
-- [🗺️ Maps & Location](#️-maps--location)
-- [💬 Real-time Features](#-real-time-features)
-- [📱 Mobile Responsive](#-mobile-responsive)
-- [🧪 Testing](#-testing)
-- [🚀 Deployment](#-deployment)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
+- [ Features](#-features)
+- [ Demo & Screenshots](#-demo--screenshots)
+- [ Tech Stack](#️-tech-stack)
+- [ Quick Start](#-quick-start)
+- [ Project Structure](#-project-structure)
+- [ API Documentation](#-api-documentation)
+- [ UI Components](#-ui-components)
+- [ Authentication](#-authentication)
+- [ Maps & Location](#️-maps--location)
+- [ Real-time Features](#-real-time-features)
+- [ Mobile Responsive](#-mobile-responsive)
+- [ Testing](#-testing)
+- [ Deployment](#-deployment)
+- [ Contributing](#-contributing)
+- [ License](#-license)
 
 ---
 
-## 🌟 Features
+##  Features
 
-### 👥 **Multi-Role Platform**
-- **🛍️ Customer Portal** - Browse, search, and order from local vendors
-- **🏪 Vendor Dashboard** - Manage shop, products, orders, and analytics
-- **👨‍💼 Admin Panel** - Platform management and vendor verification
+###  **Multi-Role Platform**
+- ** Customer Portal** - Browse, search, and order from local vendors
+- ** Vendor Dashboard** - Manage shop, products, orders, and analytics
+- ** Admin Panel** - Platform management and vendor verification
 
-### 🗺️ **Location-Based Services**
-- **📍 Real-time Vendor Tracking** - Live location updates for roaming vendors
-- **🔍 Proximity Search** - Find vendors within specified radius
-- **🗺️ Interactive Maps** - Leaflet-powered maps with custom markers
-- **📱 Geolocation Integration** - Automatic location detection
+###  **Location-Based Services**
+- ** Real-time Vendor Tracking** - Live location updates for roaming vendors
+- ** Proximity Search** - Find vendors within specified radius
+- ** Interactive Maps** - Leaflet-powered maps with custom markers
+- ** Geolocation Integration** - Automatic location detection
 
-### 💬 **Communication & Orders**
-- **📞 WhatsApp Integration** - Direct ordering via WhatsApp
-- **🛒 Smart Cart System** - Multi-vendor cart management
-- **📊 Order Tracking** - Real-time order status updates
-- **⭐ Review System** - Customer feedback and ratings
+###  **Communication & Orders**
+- ** WhatsApp Integration** - Direct ordering via WhatsApp
+- ** Smart Cart System** - Multi-vendor cart management
+- ** Order Tracking** - Real-time order status updates
+- ** Review System** - Customer feedback and ratings
 
-### 🎨 **Modern UI/UX**
-- **🌙 Beautiful Design** - Modern, clean interface with smooth animations
-- **📱 Mobile-First** - Responsive design for all devices
-- **🎭 Framer Motion** - Smooth page transitions and micro-interactions
-- **🎨 Tailwind CSS** - Utility-first styling with custom design system
+###  **Modern UI/UX**
+- ** Beautiful Design** - Modern, clean interface with smooth animations
+- ** Mobile-First** - Responsive design for all devices
+- ** Framer Motion** - Smooth page transitions and micro-interactions
+- ** Tailwind CSS** - Utility-first styling with custom design system
 
-### 🔐 **Security & Performance**
-- **🔒 JWT Authentication** - Secure token-based authentication
-- **🛡️ Role-Based Access** - Granular permission system
-- **⚡ Real-time Updates** - Socket.io for live data synchronization
-- **🚀 Optimized Performance** - Lazy loading and code splitting
+###  **Security & Performance**
+- ** JWT Authentication** - Secure token-based authentication
+- ** Role-Based Access** - Granular permission system
+- ** Real-time Updates** - Socket.io for live data synchronization
+- ** Optimized Performance** - Lazy loading and code splitting
 
 ---
 
-## 🎯 Demo & Screenshots
+##  Demo & Screenshots
 
-### 🏠 Landing Page
+### Landing Page
 !![Landing Page](image-12.png)
 *Modern landing page with bilingual support and clear call-to-actions*
 
-### 🛍️ Customer Dashboard
+### Customer Dashboard
 ![Customer Dashboard](image-13.png)
 *Interactive map view with nearby vendors and real-time locations*
 
-### 🏪 Vendor Dashboard
+### Vendor Dashboard
 ![Vendor Dashboard](image-14.png)
 *Comprehensive vendor management with analytics and order tracking*
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### **Frontend**
-- **⚛️ React 18.2.0** - Modern React with hooks and context
-- **🎨 Tailwind CSS 3.3.3** - Utility-first CSS framework
-- **🎭 Framer Motion 12.24.12** - Animation library
-- **🗺️ React Leaflet 4.2.1** - Interactive maps
-- **🔗 React Router 6.18.0** - Client-side routing
-- **🎯 Lucide React 0.263.1** - Beautiful icons
-- **📢 React Toastify 10.0.4** - Toast notifications
+- ** React 18.2.0** - Modern React with hooks and context
+- ** Tailwind CSS 3.3.3** - Utility-first CSS framework
+- ** Framer Motion 12.24.12** - Animation library
+- ** React Leaflet 4.2.1** - Interactive maps
+- ** React Router 6.18.0** - Client-side routing
+- ** Lucide React 0.263.1** - Beautiful icons
+- ** React Toastify 10.0.4** - Toast notifications
 
 ### **Backend**
-- **🟢 Node.js 18+** - JavaScript runtime
-- **⚡ Express 5.2.1** - Web framework
-- **🍃 MongoDB 9.1.4** - NoSQL database
-- **🔐 JWT 9.0.3** - Authentication tokens
-- **🔒 bcryptjs 3.0.3** - Password hashing
-- **📡 Socket.io 4.8.3** - Real-time communication
-- **🛡️ Helmet 8.1.0** - Security middleware
+- ** Node.js 18+** - JavaScript runtime
+- ** Express 5.2.1** - Web framework
+- ** MongoDB 9.1.4** - NoSQL database
+- ** JWT 9.0.3** - Authentication tokens
+- ** bcryptjs 3.0.3** - Password hashing
+- ** Socket.io 4.8.3** - Real-time communication
+- ** Helmet 8.1.0** - Security middleware
 
 ### **Development Tools**
-- **🔧 Nodemon** - Auto-restart development server
-- **🧪 Jest** - Testing framework
-- **📏 ESLint** - Code linting
-- **💅 Prettier** - Code formatting
+- ** Nodemon** - Auto-restart development server
+- ** Jest** - Testing framework
+- ** ESLint** - Code linting
+- ** Prettier** - Code formatting
 
 ---
 
-## ⚡ Quick Start
+##  Quick Start
 
-### 📋 Prerequisites
+### Prerequisites
 
 Ensure you have the following installed:
 - **Node.js 18+** ([Download](https://nodejs.org/))
 - **MongoDB 5+** ([Download](https://www.mongodb.com/try/download/community))
 - **npm** or **yarn** package manager
 
-### 🚀 Installation
+### Installation
 
 1. **Clone the repository**
 ```bash
@@ -202,75 +202,75 @@ npm start
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 vendorify/
-├── 📁 client/                     # React Frontend Application
-│   ├── 📁 public/                 # Static assets
+├── client/                     # React Frontend Application
+│   ├── public/                 # Static assets
 │   │   ├── index.html             # HTML template
 │   │   └── logo.svg               # App logo
-│   ├── 📁 src/
-│   │   ├── 📁 components/         # Reusable UI Components
-│   │   │   ├── 📁 common/         # Shared components (Navbar, Footer, etc.)
-│   │   │   ├── 📁 map/            # Map-related components
-│   │   │   ├── 📁 chat/           # Chat/messaging components
-│   │   │   └── 📁 vendor/         # Vendor-specific components
-│   │   ├── 📁 pages/              # Page Components
-│   │   │   ├── 📁 customer/       # Customer pages (Dashboard, Orders, etc.)
-│   │   │   ├── 📁 vendor/         # Vendor pages (Dashboard, Profile, etc.)
-│   │   │   └── 📁 admin/          # Admin pages
-│   │   ├── 📁 context/            # React Context Providers
+│   ├── src/
+│   │   ├── components/         # Reusable UI Components
+│   │   │   ├── common/         # Shared components (Navbar, Footer, etc.)
+│   │   │   ├── map/            # Map-related components
+│   │   │   ├── chat/           # Chat/messaging components
+│   │   │   └── vendor/         # Vendor-specific components
+│   │   ├── pages/              # Page Components
+│   │   │   ├── customer/       # Customer pages (Dashboard, Orders, etc.)
+│   │   │   ├── vendor/         # Vendor pages (Dashboard, Profile, etc.)
+│   │   │   └── admin/          # Admin pages
+│   │   ├── context/            # React Context Providers
 │   │   │   ├── AuthContext.js     # Authentication state
 │   │   │   └── AppDataContext.js  # Application data state
-│   │   ├── 📁 hooks/              # Custom React Hooks
-│   │   ├── 📁 utils/              # Utility Functions
+│   │   ├── hooks/              # Custom React Hooks
+│   │   ├── utils/              # Utility Functions
 │   │   │   ├── api.js             # API client
 │   │   │   ├── toast.js           # Toast notifications
 │   │   │   └── navigation.js      # Navigation helpers
-│   │   ├── 📁 constants/          # App Constants
-│   │   └── 📁 styles/             # Global styles
+│   │   ├── constants/          # App Constants
+│   │   └── styles/             # Global styles
 │   ├── package.json               # Frontend dependencies
 │   └── tailwind.config.js         # Tailwind configuration
-├── 📁 server/                     # Node.js Backend Application
-│   ├── 📁 controllers/            # Route Controllers
+├── server/                     # Node.js Backend Application
+│   ├── controllers/            # Route Controllers
 │   │   ├── authController.js      # Authentication logic
 │   │   ├── vendorController.js    # Vendor management
 │   │   └── orderController.js     # Order processing
-│   ├── 📁 middleware/             # Express Middleware
+│   ├── middleware/             # Express Middleware
 │   │   ├── authMiddleware.js      # JWT authentication
 │   │   ├── uploadMiddleware.js    # File upload handling
 │   │   └── validationMiddleware.js # Input validation
-│   ├── 📁 models/                 # MongoDB Models
+│   ├── models/                 # MongoDB Models
 │   │   ├── User.js                # User schema
 │   │   ├── Vendor.js              # Vendor schema
 │   │   ├── Order.js               # Order schema
 │   │   ├── Product.js             # Product schema
 │   │   └── Review.js              # Review schema
-│   ├── 📁 routes/                 # API Routes
+│   ├── routes/                 # API Routes
 │   │   ├── authRoutes.js          # Authentication endpoints
 │   │   ├── vendorRoutes.js        # Vendor endpoints
 │   │   ├── orderRoutes.js         # Order endpoints
 │   │   └── publicRoutes.js        # Public endpoints
-│   ├── 📁 scripts/                # Database Scripts
+│   ├── scripts/                # Database Scripts
 │   │   ├── initDB.js              # Database initialization
 │   │   ├── addTestVendors.js      # Add sample vendors
 │   │   └── verifySetup.js         # Setup verification
-│   ├── 📁 uploads/                # File Uploads
-│   │   └── 📁 shops/              # Shop images
-│   ├── 📁 utils/                  # Utility Functions
+│   ├── uploads/                # File Uploads
+│   │   └──  shops/              # Shop images
+│   ├──  utils/                  # Utility Functions
 │   │   └── logger.js              # Logging utility
 │   ├── index.js                   # Server entry point
 │   └── package.json               # Backend dependencies
-├── 📄 README.md                   # Project documentation
-└── 📄 .gitignore                  # Git ignore rules
+├── README.md                   # Project documentation
+└── .gitignore                  # Git ignore rules
 ```
 
 ---
 
-## 🔌 API Documentation
+##  API Documentation
 
-### 🔐 Authentication Endpoints
+### Authentication Endpoints
 
 | Method | Endpoint | Description | Body |
 |--------|----------|-------------|------|
@@ -279,7 +279,7 @@ vendorify/
 | `GET` | `/api/auth/me` | Get current user | - |
 | `POST` | `/api/auth/logout` | User logout | - |
 
-### 🏪 Vendor Endpoints
+###  Vendor Endpoints
 
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
@@ -290,7 +290,7 @@ vendorify/
 | `POST` | `/api/vendors/products` | Add product | Private |
 | `DELETE` | `/api/vendors/products/:id` | Delete product | Private |
 
-### 🌍 Public Endpoints
+###  Public Endpoints
 
 | Method | Endpoint | Description | Query Params |
 |--------|----------|-------------|--------------|
@@ -301,7 +301,7 @@ vendorify/
 | `GET` | `/api/public/vendors/:id/menu` | Get vendor menu | - |
 | `GET` | `/api/public/vendors/:id/reviews` | Get vendor reviews | - |
 
-### 📦 Order Endpoints
+###  Order Endpoints
 
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
@@ -312,35 +312,35 @@ vendorify/
 
 ---
 
-## 🎨 UI Components
+##  UI Components
 
-### 🧩 Common Components
+###  Common Components
 
-- **🧭 Navbar** - Responsive navigation with role-based menus
-- **🦶 Footer** - Site footer with links and information
-- **🔄 LoadingSpinner** - Animated loading indicators
-- **🚨 ErrorBoundary** - Error handling and fallback UI
-- **🖼️ ProgressiveImage** - Optimized image loading
-- **🔘 Button** - Consistent button styling
-- **🃏 Card** - Reusable card component
+- ** Navbar** - Responsive navigation with role-based menus
+- ** Footer** - Site footer with links and information
+- ** LoadingSpinner** - Animated loading indicators
+- ** ErrorBoundary** - Error handling and fallback UI
+- ** ProgressiveImage** - Optimized image loading
+- ** Button** - Consistent button styling
+- ** Card** - Reusable card component
 
-### 🗺️ Map Components
+###  Map Components
 
-- **🗺️ InteractiveVendorMap** - Main map with vendor markers
-- **📍 MapIcons** - Custom map marker icons
-- **🏷️ MapLegend** - Map legend and controls
-- **🎨 MapStyles** - Custom map styling
+- ** InteractiveVendorMap** - Main map with vendor markers
+- ** MapIcons** - Custom map marker icons
+- ** MapLegend** - Map legend and controls
+- ** MapStyles** - Custom map styling
 
-### 💬 Chat Components
+###  Chat Components
 
-- **🤖 ChatbotWidget** - AI-powered chat assistance
-- **💬 ConditionalChatbot** - Context-aware chat display
+- ** ChatbotWidget** - AI-powered chat assistance
+- ** ConditionalChatbot** - Context-aware chat display
 
 ---
 
-## 🔐 Authentication
+##  Authentication
 
-### 🎭 Role-Based Access Control
+### Role-Based Access Control
 
 ```javascript
 // User Roles
@@ -356,7 +356,7 @@ const ROLES = {
 </ProtectedRoute>
 ```
 
-### 🔑 JWT Token Structure
+###  JWT Token Structure
 
 ```javascript
 {
@@ -367,20 +367,20 @@ const ROLES = {
 }
 ```
 
-### 🛡️ Security Features
+###  Security Features
 
-- **🔒 Password Hashing** - bcrypt with salt rounds
-- **🎫 JWT Tokens** - Secure authentication tokens
-- **⏰ Token Expiration** - Configurable token lifetime
-- **🚫 Route Protection** - Role-based access control
-- **🛡️ Helmet.js** - Security headers
-- **⚡ Rate Limiting** - API request throttling
+- ** Password Hashing** - bcrypt with salt rounds
+- ** JWT Tokens** - Secure authentication tokens
+- ** Token Expiration** - Configurable token lifetime
+- ** Route Protection** - Role-based access control
+- ** Helmet.js** - Security headers
+- ** Rate Limiting** - API request throttling
 
 ---
 
-## 🗺️ Maps & Location
+##  Maps & Location
 
-### 📍 Location Services
+###  Location Services
 
 ```javascript
 // Geolocation Hook
@@ -394,19 +394,19 @@ const nearbyVendors = await api.getNearbyVendors(
 );
 ```
 
-### 🗺️ Map Features
+###  Map Features
 
-- **📍 Real-time Tracking** - Live vendor location updates
-- **🔍 Proximity Search** - Distance-based vendor discovery
-- **🎯 Custom Markers** - Category-specific map icons
-- **📱 Mobile Optimized** - Touch-friendly map controls
-- **🌐 Offline Support** - Cached map tiles
+- ** Real-time Tracking** - Live vendor location updates
+- ** Proximity Search** - Distance-based vendor discovery
+- ** Custom Markers** - Category-specific map icons
+- ** Mobile Optimized** - Touch-friendly map controls
+- ** Offline Support** - Cached map tiles
 
 ---
 
-## 💬 Real-time Features
+##  Real-time Features
 
-### 📡 Socket.io Integration
+###  Socket.io Integration
 
 ```javascript
 // Client-side Socket Connection
@@ -422,25 +422,25 @@ socket.on('order_status_update', (data) => {
 });
 ```
 
-### ⚡ Live Updates
+###  Live Updates
 
-- **📍 Vendor Location** - Real-time position tracking
-- **📦 Order Status** - Live order progress updates
-- **💬 Notifications** - Instant messaging and alerts
-- **📊 Dashboard Metrics** - Live analytics updates
+- ** Vendor Location** - Real-time position tracking
+- ** Order Status** - Live order progress updates
+- ** Notifications** - Instant messaging and alerts
+- ** Dashboard Metrics** - Live analytics updates
 
 ---
 
-## 📱 Mobile Responsive
+##  Mobile Responsive
 
-### 📐 Responsive Design
+###  Responsive Design
 
-- **📱 Mobile-First** - Designed for mobile devices
-- **💻 Desktop Optimized** - Enhanced desktop experience
-- **📟 Tablet Support** - Optimized for tablet screens
-- **🔄 Adaptive Layout** - Flexible grid system
+- ** Mobile-First** - Designed for mobile devices
+- ** Desktop Optimized** - Enhanced desktop experience
+- ** Tablet Support** - Optimized for tablet screens
+- ** Adaptive Layout** - Flexible grid system
 
-### 🎨 Design System
+###  Design System
 
 ```css
 /* Color Palette */
@@ -459,9 +459,9 @@ socket.on('order_status_update', (data) => {
 
 ---
 
-## 🧪 Testing
+##  Testing
 
-### 🔬 Test Setup
+###  Test Setup
 
 ```bash
 # Run client tests
@@ -476,20 +476,20 @@ npm test
 npm run test:all
 ```
 
-### 🧪 Testing Strategy
+###  Testing Strategy
 
-- **⚛️ Component Tests** - React component testing
-- **🔌 API Tests** - Endpoint testing
-- **🎭 E2E Tests** - End-to-end user flows
-- **📊 Performance Tests** - Load and performance testing
+- ** Component Tests** - React component testing
+- ** API Tests** - Endpoint testing
+- ** E2E Tests** - End-to-end user flows
+- ** Performance Tests** - Load and performance testing
 
 ---
 
-## 🛠️ Troubleshooting
+##  Troubleshooting
 
 ### Common Issues
 
-#### 🔌 "ECONNREFUSED" or "Server not reachable"
+####  "ECONNREFUSED" or "Server not reachable"
 ```bash
 # Check if MongoDB is running
 # Windows: Check Services or run `mongod`
@@ -500,14 +500,14 @@ npm run test:all
 # Update MONGODB_URI in server/.env to your Atlas connection string
 ```
 
-#### 🔐 "JWT_SECRET is not defined"
+####  "JWT_SECRET is not defined"
 ```bash
 # Make sure server/.env file exists with JWT_SECRET
 cd server
 echo "JWT_SECRET=$(openssl rand -base64 32)" >> .env
 ```
 
-#### 📦 "Module not found" errors
+####  "Module not found" errors
 ```bash
 # Clear node_modules and reinstall
 rm -rf client/node_modules server/node_modules
@@ -515,31 +515,31 @@ cd client && npm install
 cd ../server && npm install
 ```
 
-#### 🗺️ Maps not loading
+####  Maps not loading
 - Check internet connection for map tiles
 - Verify Leaflet CSS is loaded properly
 - Check browser console for JavaScript errors
 
-#### 📱 "Network Error" in browser
+####  "Network Error" in browser
 - Ensure backend server is running on port 5001
 - Check CORS configuration in server/index.js
 - Verify FRONTEND_URL in server/.env matches your client URL
 
 ### Performance Issues
 
-#### 🐌 Slow loading times
+####  Slow loading times
 - Enable MongoDB indexes: `npm run add-indexes`
 - Optimize images and reduce bundle size
 - Check network tab in browser dev tools
 
-#### 🔄 Socket.io connection issues
+####  Socket.io connection issues
 - Check firewall settings
 - Verify Socket.io server is running
 - Check browser console for connection errors
 
 ### Development Tips
 
-#### 🔧 Hot reload not working
+####  Hot reload not working
 ```bash
 # For client
 cd client && npm start
@@ -548,13 +548,13 @@ cd client && npm start
 cd server && npm run dev
 ```
 
-#### 🧪 Testing authentication
+####  Testing authentication
 ```bash
 # Use the debug auth utility
 node test-auth.js
 ```
 
-#### 📊 Database issues
+####  Database issues
 ```bash
 # Reset database
 cd server
@@ -566,16 +566,16 @@ npm run verify
 
 ### Getting Help
 
-- **📖 Documentation**: Check README.md and inline comments
-- **🐛 Issues**: Create a GitHub issue with error details
-- **💬 Community**: Join our Discord server
-- **📧 Support**: Contact support@vendorify.com
+- ** Documentation**: Check README.md and inline comments
+- ** Issues**: Create a GitHub issue with error details
+- ** Community**: Join our Discord server
+- ** Support**: Contact support@vendorify.com
 
 ---
 
-## 🚀 Deployment
+##  Deployment
 
-### 🏗️ Build for Production
+###  Build for Production
 
 ```bash
 # Build client
@@ -587,7 +587,7 @@ cd server
 npm start
 ```
 
-### ☁️ Deployment Options
+###  Deployment Options
 
 #### **Vercel (Frontend)**
 ```bash
@@ -642,7 +642,7 @@ services:
   instance_size_slug: basic-xxs
 ```
 
-### 🔧 Environment Variables for Production
+###  Environment Variables for Production
 
 ```env
 # Production Environment
@@ -658,7 +658,7 @@ REDIS_URL=redis://localhost:6379
 CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
 ```
 
-### 📊 Monitoring & Analytics
+###  Monitoring & Analytics
 
 - **Error Tracking**: Sentry, Bugsnag
 - **Performance**: New Relic, DataDog
@@ -667,77 +667,77 @@ CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 We welcome contributions! Please follow these steps:
 
-### 🔄 Development Workflow
+###  Development Workflow
 
-1. **🍴 Fork the repository**
-2. **🌿 Create a feature branch**
+1. ** Fork the repository**
+2. ** Create a feature branch**
    ```bash
    git checkout -b feature/amazing-feature
    ```
-3. **💻 Make your changes**
-4. **✅ Test your changes**
+3. ** Make your changes**
+4. ** Test your changes**
    ```bash
    npm test
    ```
-5. **📝 Commit your changes**
+5. ** Commit your changes**
    ```bash
    git commit -m 'Add amazing feature'
    ```
-6. **🚀 Push to the branch**
+6. ** Push to the branch**
    ```bash
    git push origin feature/amazing-feature
    ```
-7. **🔄 Open a Pull Request**
+7. ** Open a Pull Request**
 
-### 📋 Code Style Guidelines
+###  Code Style Guidelines
 
-- **📏 ESLint** - Follow ESLint configuration
-- **💅 Prettier** - Use Prettier for formatting
-- **📝 Comments** - Add meaningful comments
-- **🧪 Tests** - Include tests for new features
-- **📖 Documentation** - Update documentation
+- ** ESLint** - Follow ESLint configuration
+- ** Prettier** - Use Prettier for formatting
+- ** Comments** - Add meaningful comments
+- ** Tests** - Include tests for new features
+- ** Documentation** - Update documentation
 
-### 🐛 Bug Reports
+###  Bug Reports
 
 Please include:
-- **📱 Device/Browser** information
-- **🔄 Steps to reproduce**
-- **📸 Screenshots** if applicable
-- **📋 Error messages**
+- ** Device/Browser** information
+- ** Steps to reproduce**
+- ** Screenshots** if applicable
+- ** Error messages**
 
-### 💡 Feature Requests
+###  Feature Requests
 
-- **📝 Description** - Clear feature description
-- **🎯 Use Case** - Why is this feature needed?
-- **💭 Implementation** - Any implementation ideas
-- **📸 Mockups** - Visual mockups if applicable
+- ** Description** - Clear feature description
+- ** Use Case** - Why is this feature needed?
+- ** Implementation** - Any implementation ideas
+- ** Mockups** - Visual mockups if applicable
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the **MIT License** -
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
-- **⚛️ React Team** - For the amazing React framework
-- **🎨 Tailwind CSS** - For the utility-first CSS framework
-- **🗺️ Leaflet** - For the interactive maps
-- **📡 Socket.io** - For real-time communication
-- **🎭 Framer Motion** - For smooth animations
+- ** React Team** - For the amazing React framework
+- ** Tailwind CSS** - For the utility-first CSS framework
+- ** Leaflet** - For the interactive maps
+- ** Socket.io** - For real-time communication
+- ** Framer Motion** - For smooth animations
 
 ---
 ---
 
 <div align="center">
 
-**Made with ❤️ by the Vendorify Team**
+**Made with by the Vendorify Team**
 
-[⬆️ Back to Top](#-vendorify---street-vendor-marketplace)
+[ Back to Top](#-vendorify---street-vendor-marketplace)
 
 </div>
